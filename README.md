@@ -221,6 +221,45 @@ To find a given currency by ISO 4217 numeric code (three digits) you can do
 Money::Currency.find_by_iso_numeric(978) #=> Money::Currency.new(:eur)
 ```
 
+## Historical Redenomination
+
+Historical currency replacements are stored in a separate
+`Money::Redenomination::Table`. They are not foreign-exchange rates and are
+never sent to the configured exchange bank or an online service. Each rule's
+`ratio` is expressed in major units: one old major unit equals `ratio` new
+major units. Use `Integer`, `Rational`, `BigDecimal`, or an exact `String`;
+`Float` values are rejected.
+
+Rules use the half-open interval `[effective_from, effective_to)`. A rule is
+used on `effective_from`; on `effective_to`, a rule beginning on that date is
+used instead. `effective_to` may be omitted for an open-ended rule.
+
+```ruby
+Money::Currency.register(iso_code: "OLDB", subunit_to_unit: 1000,
+                         smallest_denomination: 10, priority: 1)
+Money::Currency.register(iso_code: "NEWB", subunit_to_unit: 100,
+                         smallest_denomination: 5, priority: 1)
+
+table = Money::Redenomination::Table.new([
+  {
+    from_currency: "OLDB",
+    to_currency: "NEWB",
+    ratio: Rational(1, 1000),
+    effective_from: Date.new(2000, 1, 1),
+  },
+])
+
+result = Money.from_cents(123_456, "OLDB").redenominate(table, date: Date.new(2000, 1, 1))
+result.money        #=> Money.from_cents(12, "NEWB")
+result.remainder    #=> Rational(216, 625) in NEWB fractional units
+result.cash         #=> Money.from_cents(10, "NEWB")
+result.exact_amount #=> exact NEWB major-unit amount
+```
+
+Chains of multiple rules are applied chronologically. The table rejects
+overlapping intervals from the same source currency, cycles, and multiple paths
+with inconsistent products.
+
 ## Currency Exchange
 
 Exchanging money is performed through an exchange bank object. The default

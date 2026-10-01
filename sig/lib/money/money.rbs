@@ -423,6 +423,12 @@ class Money
   #   Money.new(2000, "USD").exchange_to(Currency.new("EUR"))
   def exchange_to: ((Money::Currency | string | Symbol) other_currency) { () -> int } -> Money
 
+  def redenominate:
+    (Money::Redenomination::Table table,
+     date: Date | Time | DateTime | String,
+     ?to_currency: (Money::Currency | string | Symbol)?,
+     ?rounding_mode: Integer) -> Money::Redenomination::Result
+
   # Receive a money object with the same amount as the current Money object
   # in United States dollar.
   #

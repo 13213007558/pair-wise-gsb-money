@@ -520,6 +520,17 @@ class Money
     end
   end
 
+  # Converts through a caller-provided historical redenomination table. Unlike
+  # {#exchange_to}, this never uses the configured exchange bank.
+  def redenominate(table, date:, to_currency: nil, rounding_mode: self.class.rounding_mode)
+    table.redenominate(
+      self,
+      date: date,
+      to_currency: to_currency,
+      rounding_mode: rounding_mode,
+    )
+  end
+
   # Receive a money object with the same amount as the current Money object
   # in United States dollar.
   #

@@ -1,0 +1,56 @@
+class Money
+  module Redenomination
+    class Error < StandardError
+    end
+
+    class InvalidRule < Error
+    end
+
+    class OverlappingRules < InvalidRule
+    end
+
+    class CircularChain < InvalidRule
+    end
+
+    class InconsistentPath < InvalidRule
+    end
+
+    class MissingPath < InvalidRule
+    end
+
+    class Rule
+      def initialize: (?from_currency: String, ?to_currency: String, ?ratio: Rational,
+                       ?effective_from: Date, ?effective_to: Date?) -> void
+      attr_accessor from_currency: String
+      attr_accessor to_currency: String
+      attr_accessor ratio: Rational
+      attr_accessor effective_from: Date
+      attr_accessor effective_to: Date?
+
+      def active_on?: (Date date) -> bool
+    end
+
+    class Result
+      def initialize: (?money: Money, ?remainder: Rational, ?cash: Money,
+                       ?exact_amount: Rational, ?applied_rules: Array[Rule]) -> void
+      attr_accessor money: Money
+      attr_accessor remainder: Rational
+      attr_accessor cash: Money
+      attr_accessor exact_amount: Rational
+      attr_accessor applied_rules: Array[Rule]
+    end
+
+    class Table
+      def initialize: (?Array[Rule | Hash[Symbol, untyped]] rules) -> void
+
+      def redenominate:
+        (Money money, date: Date | Time | DateTime | String,
+         ?to_currency: (Money::Currency | String | Symbol)?,
+         ?rounding_mode: Integer) -> Result
+
+      def rules_for:
+        (Money::Currency | String | Symbol currency, Date | Time | DateTime | String date)
+          -> Array[Rule]
+    end
+  end
+end
