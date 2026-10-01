@@ -94,6 +94,11 @@ class Money
       #   bank.exchange_with(c2, "USD") #=> #<Money fractional:8031 currency:USD>
       def exchange_with: (Money from, (Money::Currency | string | Symbol) to_currency) { () -> int } -> Money
 
+      # Finds the route through a caller-provided graph of exchange quotes
+      # that delivers the largest amount of +to_currency+ for the given
+      # +Money+ object, using at most +max_hops+ conversions.
+      def best_route: (Money from, (Money::Currency | String | Symbol) to_currency, quotes: Array[Money::Bank::Routing::Quote | Hash[Symbol, untyped]], max_hops: Integer) -> Money::Bank::Routing::Route
+
       def calculate_fractional: (untyped from, untyped to_currency) -> untyped
 
       def exchange: (untyped fractional, untyped rate) ?{ (untyped) -> untyped } -> untyped

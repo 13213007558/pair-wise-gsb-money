@@ -1,0 +1,61 @@
+class Money
+  module Bank
+    # Finds the conversion route that delivers the largest amount through a
+    # caller-provided graph of exchange quotes, honoring per-edge fixed fees,
+    # per-hop cash rounding and a maximum number of hops.
+    module Routing
+      # A single directed conversion offer in a quote graph.
+      class Quote
+        attr_reader from: Money::Currency
+
+        attr_reader to: Money::Currency
+
+        attr_reader rate: BigDecimal
+
+        attr_reader fee: BigDecimal
+
+        def initialize: ((Money::Currency | String | Symbol) from, (Money::Currency | String | Symbol) to, Numeric rate, ?fee: Numeric fee) -> void
+
+        def ==: (untyped other) -> bool
+      end
+
+      # One conversion step of a solved +Route+.
+      class Hop
+        attr_reader quote: Quote
+
+        attr_reader amount_before: Money
+
+        attr_reader amount_after: Money
+
+        def initialize: (quote: Quote quote, amount_before: Money amount_before, amount_after: Money amount_after) -> void
+
+        def from_currency: () -> Money::Currency
+
+        def to_currency: () -> Money::Currency
+
+        def rate: () -> BigDecimal
+
+        def fee: () -> BigDecimal
+
+        def ==: (untyped other) -> bool
+      end
+
+      # The winning sequence of hops found by +Routing.best_route+.
+      class Route
+        attr_reader hops: Array[Hop]
+
+        attr_reader amount: Money
+
+        def initialize: (hops: Array[Hop] hops, amount: Money amount) -> void
+
+        def currencies: () -> Array[Money::Currency]
+
+        def ==: (untyped other) -> bool
+      end
+
+      def self.best_route: (Money from, (Money::Currency | String | Symbol) to_currency, quotes: Array[Quote | Hash[Symbol, untyped]], max_hops: Integer, ?rounding: ^(BigDecimal) -> Numeric) -> Route
+
+      def self.to_bigdecimal: (untyped number) -> BigDecimal
+    end
+  end
+end

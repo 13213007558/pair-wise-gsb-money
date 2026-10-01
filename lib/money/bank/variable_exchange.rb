@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "money/bank/base"
+require "money/bank/routing"
 require "money/rates_store/memory"
 require "json"
 require "yaml"
@@ -121,6 +122,48 @@ class Money
         else
           raise UnknownRate, "No conversion rate known for '#{from.currency.iso_code}' -> '#{to_currency}'"
         end
+      end
+
+      # Finds the route through a caller-provided graph of exchange quotes
+      # that delivers the largest amount of +to_currency+ for the given
+      # +Money+ object, using at most +max_hops+ conversions. Each quote may
+      # charge a fixed fee (in minor units of its +to+ currency) and every
+      # hop rounds the converted amount to whole minor units before the fee
+      # is deducted. See +Money::Bank::Routing.best_route+ for details.
+      #
+      # The bank's own rates are not used; the given quotes are the complete
+      # quote graph for this solve and stay fixed while it runs. Pass a new
+      # set of quotes to replan. The bank's rounding method, if any, is used
+      # for the per-hop rounding.
+      #
+      # @param [Money] from The amount to route.
+      # @param [Money::Currency, String, Symbol] to_currency The currency to
+      #   receive.
+      # @param [Array<Money::Bank::Routing::Quote, Hash>] quotes The quote
+      #   graph. Hashes must provide +:from+, +:to+ and +:rate+ keys and may
+      #   provide a +:fee+ key (default 0, minor units of the +to+ currency).
+      # @param [Integer] max_hops Maximum number of conversions allowed.
+      #
+      # @return [Money::Bank::Routing::Route]
+      #
+      # @raise [Money::Bank::UnknownRate] if no valid route exists.
+      #
+      # @example
+      #   bank = Money::Bank::VariableExchange.new
+      #   route = bank.best_route(
+      #     Money.new(100_00, "USD"),
+      #     "EUR",
+      #     quotes: [
+      #       { from: "USD", to: "EUR", rate: 0.9, fee: 50 },
+      #       { from: "USD", to: "GBP", rate: 0.8 },
+      #       { from: "GBP", to: "EUR", rate: 1.15, fee: 10 },
+      #     ],
+      #     max_hops: 2,
+      #   )
+      #   route.amount     #=> #<Money fractional:9190 currency:EUR>
+      #   route.currencies #=> [#<Currency USD>, #<Currency GBP>, #<Currency EUR>]
+      def best_route(from, to_currency, quotes:, max_hops:)
+        Routing.best_route(from, to_currency, quotes: quotes, max_hops: max_hops, rounding: rounding_method)
       end
 
       def calculate_fractional(from, to_currency)

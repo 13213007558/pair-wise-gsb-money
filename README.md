@@ -245,6 +245,40 @@ Money.add_rate("USD", "EUR", 0.5)
 Money.from_cents(1000, "EUR") + Money.from_cents(1000, "USD") == Money.from_cents(1500, "EUR")
 ```
 
+### Multi-hop conversion routing
+
+`Money::Bank::VariableExchange#best_route` (see `Money::Bank::Routing`) finds
+the route through a caller-provided graph of exchange quotes that delivers the
+largest amount, honoring a fixed fee per conversion, per-hop cash rounding and
+a maximum number of hops:
+
+```ruby
+bank = Money::Bank::VariableExchange.new
+route = bank.best_route(
+  Money.from_cents(100_00, "USD"),
+  "EUR",
+  quotes: [
+    { from: "USD", to: "EUR", rate: 0.9, fee: 50 }, # fee in EUR cents
+    { from: "USD", to: "GBP", rate: 0.8 },
+    { from: "GBP", to: "EUR", rate: 1.15, fee: 10 },
+  ],
+  max_hops: 2,
+)
+route.amount     # => Money.from_cents(9190, "EUR")
+route.currencies # => [USD, GBP, EUR]
+route.hops       # => each hop's amounts before/after, rate and fee
+```
+
+Each quote converts at its `rate`, rounds the result to whole minor units of
+the target currency, and then deducts its fixed `fee` (minor units of the `to`
+currency, default 0). A hop whose balance would go negative cannot be taken,
+so the highest product of rates is not necessarily the best-paying route.
+Routes may revisit currencies, bounded by `max_hops`. Ties are broken by fewer
+hops, then by the lexicographically smaller currency sequence. The given
+quotes are the complete graph for one solve and stay fixed while it runs —
+pass a new set of quotes to replan. `Money::Bank::Routing::Quote` objects may
+be used instead of hashes.
+
 ### Exchange rate stores
 
 The default bank is initialized with an in-memory store for exchange rates.
