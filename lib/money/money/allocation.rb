@@ -2,6 +2,8 @@
 
 class Money
   class Allocation
+    ConstraintError = Class.new(ArgumentError)
+
     # Allocates a specified amount into parts based on their proportions or distributes
     # it evenly when the number of parts is specified numerically.
     #
@@ -22,6 +24,8 @@ class Money
     # @return [Array<Numeric>] An array containing the allocated amounts.
     # @raise [ArgumentError] If parts is empty or not provided.
     def self.generate(amount, parts, decimal_cutoff = true)
+      return Constrained.generate(amount, parts) if parts.is_a?(::Array) && parts.any?(::Hash)
+
       parts =
         if parts.is_a?(Numeric)
           Array.new(parts, 1)
@@ -69,6 +73,11 @@ class Money
       result
     end
 
+    # @see Allocation::Constrained.generate
+    def self.allocate_with_constraints(amount, parts)
+      Constrained.generate(amount, parts)
+    end
+
     # Converts a given number to BigDecimal.
     # This method supports inputs of BigDecimal, Rational, and other numeric types by ensuring they are all returned
     # as BigDecimal instances for consistent handling.
@@ -86,3 +95,5 @@ class Money
     end
   end
 end
+
+require_relative "allocation/constrained"

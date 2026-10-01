@@ -929,6 +929,43 @@ RSpec.describe Money do
       end
     end
 
+    context "with constrained parts" do
+      it "returns stable IDs with Money amounts in the smallest unit" do
+        result = Money.us_dollar(101).allocate(
+          [
+            { id: :a, weight: 9, max: 30 },
+            { id: :b, weight: 9, max: 30 },
+            { id: :c, weight: 2 },
+            { id: :d, weight: 0, min: 10 },
+          ],
+        )
+
+        expect(result).to eq(
+          [
+            { id: :a, amount: Money.us_dollar(30) },
+            { id: :b, amount: Money.us_dollar(30) },
+            { id: :c, amount: Money.us_dollar(31) },
+            { id: :d, amount: Money.us_dollar(10) },
+          ],
+        )
+        expect(result.sum { |part| part[:amount] }).to eq(Money.us_dollar(101))
+      end
+
+      it "returns integer smallest-unit amounts with infinite precision" do
+        allow(Money).to receive(:default_infinite_precision).and_return(true)
+        result = Money.new(BigDecimal("101"), "USD").allocate(
+          [{ id: :a, weight: 1 }, { id: :b, weight: 1 }],
+        )
+
+        expect(result).to eq(
+          [
+            { id: :a, amount: Money.new(BigDecimal("51"), "USD") },
+            { id: :b, amount: Money.new(BigDecimal("50"), "USD") },
+          ],
+        )
+      end
+    end
+
     it "keeps subclasses intact" do
       special_money_class = Class.new(Money)
       expect(special_money_class.new(5).allocate([1]).first).to be_a special_money_class

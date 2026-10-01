@@ -461,7 +461,7 @@ class Money
   # part3 which results in 50% of the cash to party1, 25% to part2, and 25% to part3. Passing a
   # number instead of an array will split the amount evenly (without losing pennies when rounding).
   #
-  # @param [Array<Numeric>, Numeric] parts how amount should be distributed to parts
+  # @param [Array<Numeric>, Array<Hash>, Numeric] parts how amount should be distributed to parts
   #
   # @return [Array<Money>]
   #
@@ -471,7 +471,7 @@ class Money
   #   Money.new(100, "USD").allocate(2) #=> [Money.new(50), Money.new(50)]
   #   Money.new(100, "USD").allocate(3) #=> [Money.new(34), Money.new(33), Money.new(33)]
   #
-  def allocate: ((Array[Numeric] | Numeric) parts) -> Array[Money]
+  def allocate: ((Array[Numeric] | Array[Hash[Symbol, untyped]] | Numeric) parts) -> Array[Money | Hash[Symbol, untyped]]
 
   alias split allocate
 

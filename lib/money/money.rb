@@ -564,19 +564,29 @@ class Money
   # part3 which results in 50% of the cash to party1, 25% to part2, and 25% to part3. Passing a
   # number instead of an array will split the amount evenly (without losing pennies when rounding).
   #
-  # @param [Array<Numeric>, Numeric] parts how amount should be distributed to parts
+  # @param [Array<Numeric>, Array<Hash>, Numeric] parts how amount should be distributed to parts
   #
-  # @return [Array<Money>]
+  # @return [Array<Money>, Array<Hash>] Money parts, or +{id:, amount:}+ pairs for constrained parts
   #
   # @example
   #   Money.new(5,   "USD").allocate([3, 7]) #=> [Money.new(2), Money.new(3)]
   #   Money.new(100, "USD").allocate([1, 1, 1]) #=> [Money.new(34), Money.new(33), Money.new(33)]
   #   Money.new(100, "USD").allocate(2) #=> [Money.new(50), Money.new(50)]
   #   Money.new(100, "USD").allocate(3) #=> [Money.new(34), Money.new(33), Money.new(33)]
+  #   Money.new(101, "USD").allocate([
+  #     { id: :a, weight: 1, min: 10, max: 30 },
+  #     { id: :b, weight: 1 }
+  #   ])
   #
   def allocate(parts)
     amounts = Money::Allocation.generate(fractional, parts, !Money.default_infinite_precision)
-    amounts.map { |amount| dup_with(fractional: amount) }
+    constrained = parts.is_a?(::Array) && parts.any?(::Hash)
+
+    amounts.map do |amount|
+      next({ id: amount.fetch(:id), amount: dup_with(fractional: amount.fetch(:amount)) }) if constrained
+
+      dup_with(fractional: amount)
+    end
   end
 
   alias split allocate

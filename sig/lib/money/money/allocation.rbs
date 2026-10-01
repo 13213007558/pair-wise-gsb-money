@@ -1,5 +1,12 @@
 class Money
   class Allocation
+    class ConstraintError < ArgumentError
+    end
+
+    class Constrained
+      def self.generate: (Numeric amount, Array[Hash[Symbol, untyped]] parts) -> Array[Hash[Symbol, untyped]]
+    end
+
     # Allocates a specified amount into parts based on their proportions or distributes
     # it evenly when the number of parts is specified numerically.
     #
@@ -10,7 +17,8 @@ class Money
     #   Array<Numeric> — allocates the amounts proportionally to the given array
     #
     # @param amount [Numeric] The total amount to be allocated.
-    # @param parts [Numeric, Array<Numeric>] Number of parts to split into or an array (proportions for allocation).
+    # @param parts [Numeric, Array<Numeric>, Array<Hash>] Number of parts to split into or an array
+    #   (proportions or constrained parts for allocation).
     # @param decimal_cutoff [bool | Integer] Controls per-split precision:
     #   - When true, splits are truncated to whole amounts.
     #   - When an Integer N, splits are rounded to N decimal places.
@@ -19,6 +27,8 @@ class Money
     #
     # @return [Array[Numeric]] An array containing the allocated amounts.
     # @raise [ArgumentError] If parts is empty or not provided.
-    def self.generate: (Numeric amount, (Numeric | Array[Numeric]) parts, ?(bool | Integer) decimal_cutoff) -> Array[Numeric]
+    def self.generate: (Numeric amount, (Numeric | Array[Numeric] | Array[Hash[Symbol, untyped]]) parts, ?(bool | Integer) decimal_cutoff) -> (Array[Numeric] | Array[Hash[Symbol, untyped]])
+
+    def self.allocate_with_constraints: (Numeric amount, Array[Hash[Symbol, untyped]] parts) -> Array[Hash[Symbol, untyped]]
   end
 end

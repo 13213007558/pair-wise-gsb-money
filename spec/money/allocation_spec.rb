@@ -252,4 +252,141 @@ RSpec.describe Money::Allocation do
       end
     end
   end
+
+  describe ".allocate_with_constraints" do
+    it "allocates by weight while honoring minimum and maximum amounts" do
+      parts = [
+        { id: :a, weight: 9, max: 30 },
+        { id: :b, weight: 9, max: 30 },
+        { id: :c, weight: 2 },
+        { id: :d, weight: 0, min: 10 },
+      ]
+
+      result = described_class.allocate_with_constraints(101, parts)
+
+      expect(result).to eq(
+        [
+          { id: :a, amount: 30 },
+          { id: :b, amount: 30 },
+          { id: :c, amount: 31 },
+          { id: :d, amount: 10 },
+        ],
+      )
+      expect(result.sum { |part| part[:amount] }).to eq(101)
+    end
+
+    it "uses IDs for remainder tie-breaking regardless of input order" do
+      parts = [
+        { id: :a, weight: 0, min: 10, max: 30 },
+        { id: :b, weight: 0, min: 10, max: 30 },
+        { id: :c, weight: 0, min: 10, max: 30 },
+        { id: :d, weight: 0, min: 10, max: 30 },
+      ]
+
+      result = described_class.allocate_with_constraints(101, parts)
+      reversed_result = described_class.allocate_with_constraints(101, parts.reverse)
+      result_by_id = result.to_h { |part| [part[:id], part[:amount]] }
+      reversed_result_by_id = reversed_result.to_h { |part| [part[:id], part[:amount]] }
+
+      expect(result_by_id).to eq(a: 26, b: 25, c: 25, d: 25)
+      expect(reversed_result).to eq(
+        [
+          { id: :d, amount: 25 },
+          { id: :c, amount: 25 },
+          { id: :b, amount: 25 },
+          { id: :a, amount: 26 },
+        ],
+      )
+      expect(reversed_result_by_id).to eq(result_by_id)
+      expect(result.sum { |part| part[:amount] }).to eq(101)
+    end
+
+    it "reports why one fractional unit cannot meet the minimum allocation" do
+      expect { described_class.allocate_with_constraints(1, [{ id: :a, min: 10 }]) }
+        .to raise_error(described_class::ConstraintError, "cannot allocate 1: minimum allocation is 10")
+    end
+
+    it "reports when the total cannot fit under the maximum allocations" do
+      parts = [
+        { id: :a, weight: 1, max: 30 },
+        { id: :b, weight: 1, max: 30 },
+        { id: :c, weight: 1, max: 30 },
+      ]
+
+      expect { described_class.allocate_with_constraints(101, parts) }
+        .to raise_error(described_class::ConstraintError, "cannot allocate 101: maximum allocation is 90")
+    end
+
+    it "applies the same constraints to refunds and negates every allocation" do
+      parts = [
+        { id: :a, weight: 9, max: 30 },
+        { id: :b, weight: 9, max: 30 },
+        { id: :c, weight: 2 },
+        { id: :d, weight: 0, min: 10 },
+      ]
+
+      result = described_class.allocate_with_constraints(-101, parts)
+
+      expect(result).to eq(
+        [
+          { id: :a, amount: -30 },
+          { id: :b, amount: -30 },
+          { id: :c, amount: -31 },
+          { id: :d, amount: -10 },
+        ],
+      )
+      expect(result.sum { |part| part[:amount] }).to eq(-101)
+
+      expect { described_class.allocate_with_constraints(-1, [{ id: :a, min: 10 }]) }
+        .to raise_error(described_class::ConstraintError, "cannot allocate 1: minimum allocation is 10")
+    end
+
+    it "requires stable, unique, comparable IDs and integer bounds" do
+      expect { described_class.allocate_with_constraints(10, [{ weight: 1 }]) }
+        .to raise_error(ArgumentError, /stable :id/)
+      expect { described_class.allocate_with_constraints(10, [{ id: :a }, { id: :a }]) }
+        .to raise_error(ArgumentError, /unique/)
+      expect { described_class.allocate_with_constraints(10, [{ id: :a }, { id: 1 }]) }
+        .to raise_error(ArgumentError, /mutually comparable/)
+      expect { described_class.allocate_with_constraints(10, [{ id: :a, min: -1 }]) }
+        .to raise_error(ArgumentError, /non-negative integer/)
+      expect { described_class.allocate_with_constraints(10, [{ id: :a, max: 1.5 }]) }
+        .to raise_error(ArgumentError, /non-negative integer or nil/)
+    end
+
+    it "does not return fractional allocations for fractional-unit input" do
+      expect { described_class.allocate_with_constraints(BigDecimal("10.5"), [{ id: :a }]) }
+        .to raise_error(ArgumentError, /integer amount/)
+    end
+
+    it "accepts an integer-valued BigDecimal in fractional units" do
+      result = described_class.allocate_with_constraints(
+        BigDecimal("101"),
+        [{ id: :a, weight: 1 }, { id: :b, weight: 1 }],
+      )
+
+      expect(result).to eq([{ id: :a, amount: 51 }, { id: :b, amount: 50 }])
+    end
+
+    it "works through generate" do
+      result = described_class.generate(
+        101,
+        [
+          { id: :a, weight: 1, min: 10, max: 30 },
+          { id: :b, weight: 2, min: 10, max: 30 },
+          { id: :c, weight: 1, min: 10, max: 30 },
+          { id: :d, weight: 0, min: 10, max: 30 },
+        ],
+      )
+
+      expect(result).to eq(
+        [
+          { id: :a, amount: 30 },
+          { id: :b, amount: 30 },
+          { id: :c, amount: 30 },
+          { id: :d, amount: 11 },
+        ],
+      )
+    end
+  end
 end
