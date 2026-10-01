@@ -2,6 +2,7 @@
 
 require "money/bank/variable_exchange"
 require "money/bank/single_currency"
+require "money/computation_context"
 require "money/money/arithmetic"
 require "money/money/constructors"
 require "money/money/formatter"
@@ -276,6 +277,69 @@ class Money
     yield
   ensure
     Thread.current[:money_rounding_mode] = original_mode
+  end
+
+  # Returns the computation context currently active in the calling thread
+  # and fiber, or +nil+ when no context has been entered.
+  #
+  # @return [Money::ComputationContext, nil]
+  #
+  # @see Money.with_computation_context
+  def self.computation_context
+    Thread.current[:money_computation_context]
+  end
+
+  # Enters an explicit computation context for the duration of the block.
+  #
+  # While the context is active, monetary operations (division,
+  # multiplication, currency exchange and explicit quantization) quantize
+  # their exact results using the context's precision and rounding mode,
+  # recording +:rounded+ and +:inexact+ precision signals on the context.
+  # Signals listed in +traps+ raise instead of being silently recorded.
+  #
+  # Contexts are local to the current thread and fiber, can be nested, and
+  # the enclosing context is restored when the block exits, even when it
+  # raises.
+  #
+  # @param [Integer] precision Number of fractional digits results are
+  #   quantized to. Defaults to 0 (the smallest currency unit).
+  # @param [BigDecimal::ROUND_MODE, nil] rounding_mode Rounding mode applied
+  #   when quantizing results. Defaults to +Money.rounding_mode+.
+  # @param [Array<Symbol>] traps Signals (+:rounded+, +:inexact+) that raise
+  #   instead of only being recorded.
+  #
+  # @yield [context] The block within which the context is active. Its return
+  #   value will also be the return value of the whole method.
+  # @yieldparam [Money::ComputationContext] context The entered context.
+  #
+  # @return [Object] block results
+  #
+  # @example
+  #   Money.with_computation_context(traps: [:inexact]) do |context|
+  #     Money.new(6, "USD") / 3 #=> #<Money fractional:2 currency:USD>
+  #     Money.new(1, "USD") / 3 # raises Money::ComputationContext::InexactError
+  #   end
+  #
+  # @see Money::ComputationContext
+  def self.with_computation_context(**options)
+    context = ComputationContext.new(**options)
+    previous_context = Thread.current[:money_computation_context]
+    Thread.current[:money_computation_context] = context
+    begin
+      yield context
+    ensure
+      Thread.current[:money_computation_context] = previous_context
+    end
+  end
+
+  # Applies the active computation context (if any) to an exact operation
+  # result, quantizing it and recording precision signals. Returns the value
+  # unchanged when no context is active.
+  #
+  # @private
+  def self.apply_computation_context(value)
+    context = computation_context
+    context ? context.quantize(value) : value
   end
 
   # Adds a new exchange rate to the default bank and return the rate.
@@ -595,8 +659,41 @@ class Money
   #
   # @see Money.default_infinite_precision
   def round(rounding_mode = self.class.rounding_mode, rounding_precision = 0)
-    rounded_amount = as_d(@fractional).round(rounding_precision, rounding_mode)
+    exact_amount = as_d(@fractional)
+    rounded_amount = exact_amount.round(rounding_precision, rounding_mode)
+    if (context = self.class.computation_context)
+      context.record(exact_amount, rounded_amount, rounding_precision)
+    end
     dup_with(fractional: rounded_amount)
+  end
+
+  # Explicitly quantizes the monetary amount to +precision+ fractional digits
+  # using +rounding_mode+. When a computation context is active, the context
+  # precision and rounding mode are used unless overridden, and precision
+  # signals are recorded (and trapped) on the context.
+  #
+  # @param [Integer, nil] precision Number of fractional digits to quantize
+  #   to. Defaults to the active computation context's precision, or 0.
+  # @param [BigDecimal::ROUND_MODE, nil] rounding_mode Rounding mode to apply.
+  #   Defaults to the active computation context's rounding mode, or
+  #   +Money.rounding_mode+.
+  #
+  # @return [Money]
+  #
+  # @example
+  #   Money.new(BigDecimal("10.5"), "USD").quantize #=> Money.new(11, "USD")
+  #
+  # @see Money.with_computation_context
+  def quantize(precision = nil, rounding_mode = nil)
+    context = self.class.computation_context
+    precision ||= context ? context.precision : 0
+    rounding_mode ||= context ? context.rounding_mode : self.class.rounding_mode
+
+    exact_amount = as_d(@fractional)
+    quantized_amount = exact_amount.round(precision, rounding_mode)
+    context&.record(exact_amount, quantized_amount, precision)
+
+    dup_with(fractional: quantized_amount)
   end
 
   # Creates a formatted price string according to several rules.

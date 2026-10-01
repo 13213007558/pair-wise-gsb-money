@@ -240,6 +240,30 @@ class Money
   #   end
   def self.with_rounding_mode: (untyped mode) { () -> untyped } -> untyped
 
+  # Returns the computation context currently active in the calling thread
+  # and fiber, or +nil+ when no context has been entered.
+  #
+  # @return [Money::ComputationContext, nil]
+  #
+  # @see Money.with_computation_context
+  def self.computation_context: () -> Money::ComputationContext?
+
+  # Enters an explicit computation context for the duration of the block.
+  #
+  # @yield [context] The block within which the context is active.
+  # @yieldparam [Money::ComputationContext] context The entered context.
+  #
+  # @return [Object] block results
+  #
+  # @see Money::ComputationContext
+  def self.with_computation_context: (?precision: Integer, ?rounding_mode: untyped, ?traps: Array[Symbol]) { (Money::ComputationContext) -> untyped } -> untyped
+
+  # Applies the active computation context (if any) to an exact operation
+  # result, quantizing it and recording precision signals.
+  #
+  # @private
+  def self.apply_computation_context: (untyped value) -> untyped
+
   # Temporarily changes the default bank in the current thread only
   #
   # @param [Money::Bank::Base] bank The bank to use within the block
@@ -489,6 +513,16 @@ class Money
   #
   # @see Money.default_infinite_precision
   def round: (?untyped rounding_mode, ?::Integer rounding_precision) -> Money
+
+  # Explicitly quantizes the monetary amount to +precision+ fractional digits
+  # using +rounding_mode+. When a computation context is active, the context
+  # precision and rounding mode are used unless overridden, and precision
+  # signals are recorded (and trapped) on the context.
+  #
+  # @return [Money]
+  #
+  # @see Money.with_computation_context
+  def quantize: (?::Integer? precision, ?untyped rounding_mode) -> Money
 
   # Creates a formatted price string according to several rules.
   #

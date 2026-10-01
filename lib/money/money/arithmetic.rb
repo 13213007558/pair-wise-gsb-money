@@ -180,7 +180,7 @@ class Money
     def *(other)
       other = other.value if other.is_a?(CoercedNumeric)
       if other.is_a? Numeric
-        dup_with(fractional: fractional * other)
+        dup_with(fractional: Money.apply_computation_context(fractional * other))
       else
         raise TypeError, "Can't multiply a #{self.class.name} by a #{other.class.name}'s value"
       end
@@ -213,7 +213,7 @@ class Money
         other = as_d(other)
         raise ZeroDivisionError, "divided by zero" if other.zero?
 
-        dup_with(fractional: fractional / other)
+        dup_with(fractional: Money.apply_computation_context(fractional / other))
       end
     end
 

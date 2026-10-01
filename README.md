@@ -497,6 +497,29 @@ Money.rounding_mode = BigDecimal::ROUND_HALF_EVEN
 
 See [BigDecimal::ROUND_MODE](https://ruby-doc.org/3.4.1/gems/bigdecimal/BigDecimal.html#ROUND_MODE) for more information.
 
+### Computation contexts
+
+Settlement code that must not silently drop decimals can enter an explicit computation context. While the context is active, division, multiplication, currency exchange and explicit quantization (`Money#quantize`) quantize their exact results using the context's precision and rounding mode, and record precision signals on the context:
+
+- `:rounded` — digits had to be discarded to fit the precision, even if the value did not change
+- `:inexact` — the quantized result differs from the exact result
+
+Signals listed in `traps` raise instead of being silently recorded:
+
+```ruby
+Money.with_computation_context(precision: 0, traps: [:inexact]) do |context|
+  Money.new(6, "USD") / 3 #=> #<Money fractional:2 currency:USD> (exact, no signals)
+  Money.new(1, "USD") / 3 # raises Money::ComputationContext::InexactError
+end
+
+Money.with_computation_context do |context|
+  Money.new(1, "USD") / 3
+  context.signals #=> [:rounded, :inexact]
+end
+```
+
+Contexts can be nested (the enclosing context is restored when the block exits) and are isolated per thread and fiber.
+
 To round to the nearest cash value in currencies without small denominations:
 
 ```ruby

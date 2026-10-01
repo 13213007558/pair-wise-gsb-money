@@ -1,0 +1,63 @@
+class Money
+  # An explicitly entered computation context that controls how monetary
+  # operations round their results and which precision violations raise.
+  #
+  # @see Money.with_computation_context
+  class ComputationContext
+    # Base error for precision signals trapped by a computation context.
+    class Error < StandardError
+    end
+
+    # Raised when a trapped operation produces a result whose value differs
+    # from the exact result.
+    class InexactError < Error
+    end
+
+    # Raised when a trapped operation had to discard digits to fit the
+    # configured precision, even when the value itself did not change.
+    class RoundedError < Error
+    end
+
+    # Precision signals that can be recorded and trapped.
+    SIGNALS: Array[Symbol]
+
+    @precision: Integer
+    @rounding_mode: untyped
+    @traps: Array[Symbol]
+    @signals: Array[Symbol]
+
+    # @return [Integer] number of fractional digits results are quantized to
+    attr_reader precision: Integer
+
+    # @return [Array<Symbol>] signals that raise instead of only being recorded
+    attr_reader traps: Array[Symbol]
+
+    def initialize: (?precision: Integer, ?rounding_mode: untyped, ?traps: Array[Symbol]) -> void
+
+    # The rounding mode applied when quantizing results. Falls back to
+    # +Money.rounding_mode+ when the context does not configure one.
+    def rounding_mode: () -> untyped
+
+    # Signals recorded so far in this context, in order of first occurrence.
+    def signals: () -> Array[Symbol]
+
+    # Whether any operation in this context had to discard digits to fit the
+    # configured precision, even if the value itself did not change.
+    def rounded?: () -> bool
+
+    # Whether any operation in this context produced a result whose value
+    # differs from the exact result.
+    def inexact?: () -> bool
+
+    # Quantizes +value+ to the context precision using the context rounding
+    # mode, recording (and possibly trapping) precision signals.
+    def quantize: (untyped value) -> BigDecimal
+
+    # Records precision signals for +value+ having been rounded to
+    # +quantized+ at +record_precision+ fractional digits.
+    def record: (untyped value, untyped quantized, ?Integer record_precision) -> void
+
+    def self.to_bigdecimal: (untyped value) -> BigDecimal
+  end
+end
+

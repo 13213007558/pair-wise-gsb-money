@@ -137,7 +137,7 @@ class Money
         elsif @rounding_method
           @rounding_method.call(ex)
         else
-          ex
+          Money.apply_computation_context(ex)
         end
       end
 
