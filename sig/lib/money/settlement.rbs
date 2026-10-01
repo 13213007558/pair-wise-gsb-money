@@ -1,0 +1,41 @@
+class Money
+  class Settlement
+    class Transfer < Data
+      attr_reader from: untyped
+      attr_reader to: untyped
+      attr_reader amount: Money
+    end
+
+    class Proof < Data
+      attr_reader grouping: Array[Array[untyped]]
+      attr_reader group_transfer_counts: Array[Integer]
+      attr_reader basis: String
+      attr_reader search: Hash[Symbol, untyped]
+    end
+
+    class Result < Data
+      attr_reader currency: Money::Currency | nil
+      attr_reader participants: Array[untyped]
+      attr_reader transfers: Array[Transfer]
+      attr_reader lower_bound: Integer
+      attr_reader upper_bound: Integer
+      attr_reader status: String
+      attr_reader search_budget: Integer | nil
+      attr_reader budget_used: Integer
+      attr_reader proof: Proof | nil
+
+      def optimal?: () -> bool
+      def budget_exhausted?: () -> bool
+    end
+
+    def self.generate:
+      (untyped balances,
+       ?currency: (Money::Currency | String | Symbol | nil),
+       ?search_budget: (Integer | nil)) -> Result
+  end
+
+  def self.settle_balances:
+    (untyped balances,
+     ?currency: (Money::Currency | String | Symbol | nil),
+     ?search_budget: (Integer | nil)) -> Settlement::Result
+end
