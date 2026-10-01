@@ -1,0 +1,42 @@
+# An immutable snapshot of the exchange rates used to convert a Basket.
+class Money::Quote
+  @totals: Hash[String, Money]
+  @rates: Hash[[String, String], BigDecimal]
+  @report_currency: Money::Currency
+  @bank: Money::Bank::Base
+  @converted: Money
+
+  attr_reader totals: Hash[String, Money]
+  attr_reader rates: Hash[[String, String], BigDecimal]
+  attr_reader report_currency: Money::Currency
+
+  def self.capture: (Money::Basket basket,
+                     Money::Currency | String | Symbol report_currency,
+                     ?bank: Money::Bank::Base) -> Money::Quote
+
+  def from_currency_totals: () -> Hash[String, Money]
+
+  def []: (Money::Currency | String | Symbol from,
+           Money::Currency | String | Symbol to) -> BigDecimal?
+
+  def convert: () -> Money
+
+  def to_h: () -> Hash[String, untyped]
+
+  def eql?: (untyped other) -> bool
+
+  def ==: (untyped other) -> bool
+
+  def hash: () -> Integer
+
+  def inspect: () -> String
+
+  private
+
+  def init: (Hash[String, Money] totals,
+             Hash[[String, String], BigDecimal] rates,
+             Money::Currency report_currency,
+             Money::Bank::Base bank) -> void
+
+  def calculate: () -> Money
+end

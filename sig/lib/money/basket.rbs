@@ -1,0 +1,62 @@
+# An immutable collection of net Money amounts grouped by currency.
+class Money::Basket
+  include Enumerable[Money]
+
+  @amounts: Hash[String, Money]
+
+  # @return [Hash{String => Money}]
+  attr_reader amounts: Hash[String, Money]
+
+  def initialize: (*Money entries) -> void
+
+  def []: (Money::Currency | String | Symbol currency) -> Money?
+
+  def currencies: () -> Array[String]
+
+  def each: () { (Money) -> void } -> self
+            | () -> Enumerator[Money, self]
+
+  def empty?: () -> bool
+
+  def zero?: () -> bool
+
+  def +: (Money::Basket | Money other) -> Money::Basket
+
+  def merge: (Money::Basket | Money other) -> Money::Basket
+
+  def -: (Money::Basket | Money other) -> Money::Basket
+
+  def -@: () -> Money::Basket
+
+  def quote_for: (Money::Currency | String | Symbol report_currency,
+                  ?bank: Money::Bank::Base?) -> Money::Quote
+
+  def convert_to: (Money::Currency | String | Symbol report_currency,
+                   ?bank: Money::Bank::Base?) -> Money
+
+  def as_json: (*untyped) -> Hash[String, String]
+
+  def to_json: (*untyped) -> String
+
+  def self.from_json: (String | Hash[String, String] string) -> Money::Basket
+
+  def eql?: (untyped other) -> bool
+
+  def ==: (untyped other) -> bool
+
+  def hash: () -> Integer
+
+  def inspect: () -> String
+
+  private
+
+  def entries: () -> Array[Money]
+
+  def to_money: (untyped entry) -> Money
+
+  def normalize: (untyped other) -> Array[Money]
+
+  def self.from_entries: (Array[Money] entries) -> Money::Basket
+
+  def self.net_entries: (Array[Money] entries) -> Hash[String, Money]
+end
