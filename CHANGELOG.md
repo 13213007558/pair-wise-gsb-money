@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Money::RateConsistencyChecker`, an offline checker that finds directed simple cycles with a rate product strictly greater than 1 in a fixed rate snapshot, using exact rational arithmetic and returning a recomputable witness
 - Fix `Money::Allocation.generate` converting a Rational with unlimited `to_d` precision. It now uses `Money.conversion_precision`
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`

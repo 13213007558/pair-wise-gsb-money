@@ -1,0 +1,134 @@
+class Money
+  # Offline consistency checker for a fixed snapshot of exchange rates.
+  #
+  # Exchanging currency A for B, then B for C, then C back for A should
+  # never increase the amount. If a directed cycle of rates exists whose
+  # product is strictly greater than 1, the snapshot is inconsistent and
+  # money can be created out of thin air by hopping around the cycle.
+  #
+  # The checker works on a frozen snapshot of directed rates. All
+  # arithmetic is exact (Rational), so a cycle whose product exceeds 1 by
+  # an arbitrarily small amount is still detected, and the returned
+  # witness can be recomputed exactly by the caller. Missing reverse
+  # edges are simply absent from the graph; rates are never inverted.
+  #
+  # @example
+  #   checker = Money::RateConsistencyChecker.new
+  #   result = checker.check(
+  #     ["USD", "EUR"] => 2,
+  #     ["EUR", "USD"] => Rational(3, 5),
+  #   )
+  #   result.status            #=> :arbitrage
+  #   result.cycle.currencies  #=> ["EUR", "USD", "EUR"]
+  #   result.cycle.product     #=> (6/5)
+  class RateConsistencyChecker
+    # The lowest error class for the consistency checker.
+    class Error < StandardError
+    end
+
+    # Raised when a rate is not a positive, finite number.
+    class InvalidRate < Error
+    end
+
+    # Raised when the snapshot cannot be understood.
+    class InvalidSnapshot < Error
+    end
+
+    # Key separator used by +Money::Bank::VariableExchange#export_rates+.
+    SERIALIZER_SEPARATOR: string
+
+    # A single directed conversion edge of the snapshot, keeping the
+    # original rate object next to its exact rational value.
+    class Edge
+      attr_reader from: String
+
+      attr_reader to: String
+
+      attr_reader rate: untyped
+
+      attr_reader rational: Rational
+
+      def initialize: (from: String, to: String, rate: untyped, rational: Rational) -> void
+
+      def to_s: () -> String
+    end
+
+    # A witness cycle: a directed simple cycle whose rate product is
+    # strictly greater than 1. The path starts and ends at the same
+    # currency and every edge carries the original rate, so the product
+    # can be recomputed exactly from the witness alone.
+    class Cycle
+      attr_reader edges: Array[Edge]
+
+      def initialize: (Array[Edge] edges) -> void
+
+      # The currency path, e.g. ["USD", "EUR", "JPY", "USD"].
+      #
+      # @return [Array<String>]
+      def currencies: () -> Array[String]
+
+      # The exact product of the rates along the cycle.
+      #
+      # @return [Rational] strictly greater than 1
+      def product: () -> Rational
+
+      def to_s: () -> String
+    end
+
+    # The outcome of a consistency check.
+    #
+    # +status+ is one of:
+    #
+    # [:consistent]   The whole snapshot was analyzed and no directed
+    #                 simple cycle with product strictly greater than 1
+    #                 exists.
+    # [:arbitrage]    Such a cycle exists; +cycle+ holds the witness.
+    # [:inconclusive] The +max_steps+ budget ran out before the analysis
+    #                 could prove either of the above.
+    class Result
+      STATUSES: Array[Symbol]
+
+      attr_reader status: Symbol
+
+      attr_reader cycle: Cycle?
+
+      attr_reader steps: Integer
+
+      def initialize: (status: Symbol, ?cycle: Cycle?, ?steps: Integer) -> void
+
+      def consistent?: () -> bool
+
+      def arbitrage?: () -> bool
+
+      def inconclusive?: () -> bool
+    end
+
+    # Convenience wrapper for +#check+.
+    def self.check: (untyped snapshot, ?max_steps: Integer?) -> Result
+
+    # Checks a fixed snapshot of exchange rates for arbitrage cycles.
+    #
+    # The snapshot can be:
+    #
+    # - anything responding to +each_rate+ (e.g. +Money::RatesStore::Memory+),
+    # - a +Money::Bank::VariableExchange+ (its store is snapshotted),
+    # - a +Hash+ mapping +[from, to]+ pairs or +"FROM_TO"+ strings to rates,
+    # - an +Enumerable+ of +[from, to, rate]+ triples.
+    #
+    # Rates may be +Rational+, +Integer+, +BigDecimal+, +Float+ or numeric
+    # +String+; they are converted to exact rationals. Zero, negative,
+    # non-finite or unparseable rates raise +InvalidRate+.
+    #
+    # @param [Object] snapshot The fixed rate snapshot to analyze.
+    # @param [Integer, nil] max_steps Maximum number of edge relaxations
+    #   to attempt before giving up with an +:inconclusive+ result.
+    #   +nil+ (default) means no budget limit.
+    #
+    # @return [Result]
+    #
+    # @raise [InvalidRate] if a rate is not a positive, finite number.
+    # @raise [InvalidSnapshot] if the snapshot format is not understood.
+    # @raise [ArgumentError] if +max_steps+ is invalid.
+    def check: (untyped snapshot, ?max_steps: Integer?) -> Result
+  end
+end

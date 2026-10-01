@@ -426,6 +426,37 @@ currencies don't match:
 Money.disallow_currency_conversion!
 ```
 
+### Exchange rate consistency check
+
+A snapshot of exchange rates is inconsistent when a directed cycle of rates
+(A -> B -> C -> A) multiplies to more than 1, creating money out of thin air.
+`Money::RateConsistencyChecker` analyzes a fixed rate snapshot offline and
+finds such cycles using exact rational arithmetic:
+
+```ruby
+result = Money::RateConsistencyChecker.check(
+  ["USD", "EUR"] => 2,
+  ["EUR", "USD"] => Rational(3, 5),
+)
+
+result.status            # => :arbitrage
+result.cycle.currencies  # => ["EUR", "USD", "EUR"]
+result.cycle.edges       # => edges with the original rate of each hop
+result.cycle.product     # => (6/5), recomputed exactly from the witness
+```
+
+The snapshot can be a `Money::Bank::VariableExchange`, a
+`Money::RatesStore::Memory`, a hash of `[from, to] => rate` (or
+`"FROM_TO" => rate`) pairs, or an enumerable of `[from, to, rate]` triples.
+Rates are used exactly as given: missing reverse edges are ignored and rates
+are never inverted. Non-positive or unparseable rates raise
+`Money::RateConsistencyChecker::InvalidRate`.
+
+The status is `:consistent` only when the whole snapshot was analyzed and no
+cycle with a product strictly greater than 1 exists. Pass `max_steps:` to cap
+the analysis; when the budget runs out before the proof completes, the status
+is `:inconclusive` instead.
+
 ### Implementations
 
 The following is a list of Money.gem compatible currency exchange rate
