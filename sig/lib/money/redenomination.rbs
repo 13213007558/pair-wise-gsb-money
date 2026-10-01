@@ -1,0 +1,129 @@
+class Money
+  # An independent table of historical redenominations (currency reforms),
+  # where an old currency is replaced by a new one at a fixed, exact ratio
+  # starting on a known date. Unlike +Money::Bank+ exchange rates, these
+  # rules are supplied entirely by the caller and are never fetched online.
+  #
+  # Each rule is effective over the half-open interval
+  # +[valid_from, valid_to)+: the rule applies on +valid_from+ itself, and
+  # stops applying on +valid_to+, when the next era's rule (if any) takes
+  # over. A +nil+ +valid_to+ means the rule is open-ended.
+  module Redenomination
+    # Base class for redenomination errors.
+    class Error < StandardError
+    end
+
+    # Raised when a rule is malformed (bad dates, non-positive ratio, etc).
+    class InvalidRuleError < Error
+    end
+
+    # Raised when a rule's effective interval overlaps another rule for the
+    # same +from+ currency.
+    class OverlappingRuleError < Error
+    end
+
+    # Raised when rules form a cycle (A -> B -> ... -> A).
+    class CyclicChainError < Error
+    end
+
+    # Raised when a new rule would create a second conversion path between
+    # two currencies whose composed ratio disagrees with the existing one.
+    class InconsistentPathError < Error
+    end
+
+    # A single redenomination rule.
+    class Rule
+      attr_reader from_currency: Money::Currency
+
+      attr_reader to_currency: Money::Currency
+
+      attr_reader ratio: Rational
+
+      attr_reader valid_from: Date
+
+      attr_reader valid_to: Date?
+
+      attr_reader cash_step: Integer?
+
+      def initialize: (from_currency: Money::Currency, to_currency: Money::Currency, ratio: Rational, valid_from: Date, valid_to: Date?, cash_step: Integer?) -> void
+
+      # Whether the rule is in effect on +date+. Intervals are half-open:
+      # the rule applies on +valid_from+ but not on +valid_to+.
+      def covers?: (Date date) -> bool
+    end
+
+    # The outcome of a conversion: a bookable +Money+ amount plus the exact
+    # remainder that the smallest unit of the target currency (and its cash
+    # rounding step) could not absorb.
+    class Result
+      # @return [Money] bookable amount in the final currency
+      attr_reader money: Money
+
+      # @return [Rational] exact leftover, in subunits of the final
+      #   currency, not absorbed by the smallest unit or cash step
+      attr_reader remainder: Rational
+
+      # @return [Rational] exact converted amount before rounding, in
+      #   subunits of the final currency
+      attr_reader exact_fractional: Rational
+
+      # @return [Array<Rule>] the rules that were applied, in order
+      attr_reader rules: Array[Rule]
+
+      def initialize: (money: Money, remainder: Rational, exact_fractional: Rational, rules: Array[Rule]) -> void
+
+      # @return [Money::Currency] the currency of the result
+      def currency: () -> Money::Currency
+
+      # @return [Boolean] whether any redenomination rule was applied
+      def converted?: () -> bool
+    end
+
+    # A standalone, caller-managed table of redenomination rules.
+    class Table
+      def initialize: () -> void
+
+      # @return [Array<Rule>] the registered rules
+      def rules: () -> Array[Rule]
+
+      # Removes every registered rule.
+      def reset!: () -> void
+
+      # Registers a redenomination rule.
+      #
+      # @param from [Money::Currency, String, Symbol] the old currency
+      # @param to [Money::Currency, String, Symbol] the new currency
+      # @param ratio [Integer, Rational, BigDecimal, String] exact ratio
+      # @param valid_from [Date, Time, String] first day the rule applies
+      #   (inclusive)
+      # @param valid_to [Date, Time, String, nil] day the rule stops applying
+      #   (exclusive); +nil+ means open-ended
+      # @param cash_step [Integer, nil] optional cash rounding step, in
+      #   subunits of +to+
+      #
+      # @return [Rule]
+      def register: (from: Money::Currency | String | Symbol, to: Money::Currency | String | Symbol, ratio: Integer | Rational | BigDecimal | String, valid_from: Date | Time | String, ?valid_to: Date | Time | String | nil, ?cash_step: Integer?) -> Rule
+
+      # Converts +money+ through every redenomination in effect from +date+
+      # onwards, possibly spanning several reforms.
+      #
+      # @param money [Money] the historical amount
+      # @param date [Date, Time, String] the date of the historical amount
+      #
+      # @return [Result]
+      def convert: (Money money, Date | Time | String date) -> Result
+    end
+
+    # The process-wide default table used by {Money#redenominate}.
+    def self.default_table: () -> Table
+
+    # Registers a rule on the default table. See {Table#register}.
+    def self.register: (from: Money::Currency | String | Symbol, to: Money::Currency | String | Symbol, ratio: Integer | Rational | BigDecimal | String, valid_from: Date | Time | String, ?valid_to: Date | Time | String | nil, ?cash_step: Integer?) -> Rule
+
+    # Converts using the default table. See {Table#convert}.
+    def self.convert: (Money money, Date | Time | String date) -> Result
+
+    # Clears the default table.
+    def self.reset!: () -> void
+  end
+end

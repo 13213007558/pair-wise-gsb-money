@@ -426,6 +426,55 @@ currencies don't match:
 Money.disallow_currency_conversion!
 ```
 
+## Historical Redenomination
+
+Historical accounts sometimes span a currency reform (redenomination), where
+an old currency is replaced by a new one at a fixed ratio — and the smallest
+unit and cash rounding step may change too. `Money::Redenomination` is an
+independent, caller-supplied table for these reforms; it never fetches rates
+online and is unrelated to `Money::Bank` exchange rates.
+
+```ruby
+table = Money::Redenomination::Table.new
+
+# 1000 old = 1 new, effective from 2000-01-01 (inclusive) until
+# 2010-01-01 (exclusive), when the next reform takes over.
+table.register(from: "XOA", to: "XNA", ratio: Rational(1, 1000),
+               valid_from: Date.new(2000, 1, 1), valid_to: Date.new(2010, 1, 1))
+table.register(from: "XNA", to: "XNB", ratio: Rational(1, 100),
+               valid_from: Date.new(2010, 1, 1), cash_step: 5)
+
+result = table.convert(Money.new(12_345_678, "XOA"), Date.new(2005, 6, 1))
+result.money     # => #<Money fractional:125 currency:XNB> — bookable amount
+result.remainder # => Rational — exact leftover the smallest unit (and the
+                 #    5-cent cash step) could not absorb, in XNB subunits
+```
+
+Semantics worth knowing:
+
+- Each rule covers the half-open interval `[valid_from, valid_to)`: it
+  applies on `valid_from` itself and stops applying on `valid_to`, when the
+  next era's rule takes over. A `nil` `valid_to` is open-ended.
+- The date selects the rule that applies to the amount's currency; the
+  conversion then follows the chain forward and may span several reforms.
+- Arithmetic is exact (rational) end to end; rounding happens once, at the
+  end, using `Money.rounding_mode`, to the final currency's smallest unit
+  and the last rule's optional `cash_step` (in subunits).
+- Ratios must be exact: `Integer`, `Rational`, `BigDecimal` or `String`.
+  `Float` is rejected.
+- Registration rejects overlapping intervals for the same currency
+  (`OverlappingRuleError`), chains that would loop (`CyclicChainError`) and
+  rules that create a second conversion path with a different composed
+  ratio (`InconsistentPathError`).
+
+There is also a shared default table:
+
+```ruby
+Money::Redenomination.register(from: "XOA", to: "XNA", ratio: Rational(1, 1000),
+                               valid_from: Date.new(2000, 1, 1))
+Money.new(1000, "XOA").redenominate(Date.new(2005, 6, 1)) # => #<Money::Redenomination::Result>
+```
+
 ### Implementations
 
 The following is a list of Money.gem compatible currency exchange rate

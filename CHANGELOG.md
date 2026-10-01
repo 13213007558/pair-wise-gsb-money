@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Money::Redenomination`, an independent caller-supplied table of historical currency reforms with exact ratios and effective date intervals; conversions can span consecutive reforms and return both a bookable amount and the exact remainder, via `Money::Redenomination::Table#convert` and `Money#redenominate`
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`
 - Fix deprecation warning for eql?

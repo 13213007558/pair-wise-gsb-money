@@ -512,6 +512,18 @@ class Money
 
   def dup_with: (?::Hash[untyped, untyped] options) -> untyped
 
+  # Converts this amount through the historical redenomination table,
+  # possibly spanning several reforms. See
+  # {Money::Redenomination::Table#convert}.
+  #
+  # @param date [Date, Time, String] the date of this historical amount
+  # @param table [Money::Redenomination::Table] defaults to the shared
+  #   {Money::Redenomination.default_table}
+  #
+  # @return [Money::Redenomination::Result]
+  #
+  def redenominate: (Date | Time | String date, ?table: Money::Redenomination::Table table) -> Money::Redenomination::Result
+
   private
 
   def as_d: (untyped num) -> untyped
