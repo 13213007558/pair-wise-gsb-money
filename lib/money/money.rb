@@ -7,6 +7,7 @@ require "money/money/constructors"
 require "money/money/formatter"
 require "money/money/allocation"
 require "money/money/locale_backend"
+require "money/money/settlement"
 
 # "Money is any object or record that is generally accepted as payment for
 # goods and services and repayment of debts in a given socio-economic context

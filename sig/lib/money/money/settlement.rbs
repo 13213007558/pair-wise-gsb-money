@@ -1,0 +1,80 @@
+class Money
+  # Exact minimum-transfer settlement for net balances in a single currency.
+  #
+  # Given every participant's net balance (positive means "should receive",
+  # negative means "should pay"), expressed as integers in the currency's
+  # smallest unit and summing to zero, Money::Settlement.solve finds a set of
+  # transfers that zeroes everyone out using as few transfers as possible.
+  class Settlement
+    # Raised when a settlement result fails an independent re-check.
+    class VerificationError < StandardError
+    end
+
+    # Raised internally when the search budget is exhausted.
+    class BudgetExhausted < StandardError
+    end
+
+    # A single transfer of +amount+ minor units from participant +from+ to
+    # participant +to+.
+    class Transfer
+      include Comparable
+
+      attr_reader from: untyped
+      attr_reader to: untyped
+      attr_reader amount: Integer
+
+      def initialize: (from: untyped, to: untyped, amount: Integer) -> void
+
+      def ==: (untyped other) -> bool
+      alias eql? ==
+
+      def hash: () -> Integer
+
+      def <=>: (untyped other) -> Integer?
+
+      def to_s: () -> String
+
+      def inspect: () -> String
+    end
+
+    # The outcome of Money::Settlement.solve.
+    class Result
+      attr_reader transfers: Array[Transfer]
+      attr_reader groups: Array[Array[untyped]]
+      attr_reader lower_bound: Integer
+      attr_reader upper_bound: Integer
+      attr_reader nodes_explored: Integer
+      attr_reader status: Symbol
+
+      def initialize: (transfers: Array[Transfer], groups: Array[Array[untyped]], lower_bound: Integer, upper_bound: Integer, nodes_explored: Integer, status: Symbol) -> void
+
+      def optimal?: () -> bool
+
+      def transfer_count: () -> Integer
+
+      # A reviewable optimality basis for the result.
+      def proof: () -> Hash[Symbol, untyped]
+    end
+
+    # Tracks the remaining search budget. Not part of the public API.
+    class Budget
+      attr_reader nodes: Integer
+
+      def initialize: (Integer? max_nodes) -> void
+
+      def consume!: () -> void
+    end
+
+    # Solves a settlement instance.
+    def self.solve: ((Hash[untyped, Integer] | Array[[untyped, Integer]]) balances, ?max_nodes: Integer?) -> Result
+
+    # Independently re-checks a settlement result.
+    def self.verify: ((Hash[untyped, Integer] | Array[[untyped, Integer]]) balances, Result result, ?max_nodes: Integer?) -> true
+  end
+
+  # Solves net balances into a minimum set of settlement transfers.
+  #
+  # @see Money::Settlement
+  def self.settle: ((Hash[untyped, Integer] | Array[[untyped, Integer]]) balances, ?max_nodes: Integer?) -> Settlement::Result
+end
+

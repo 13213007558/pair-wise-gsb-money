@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Money.settle` / `Money::Settlement.solve`: exact minimum-transfer settlement of net balances in a single currency, with deterministic tie-breaking, a reviewable optimality proof (`Money::Settlement::Result#proof`), independent re-checking via `Money::Settlement.verify`, and a `max_nodes` search budget that returns the feasible solution plus proven bounds when exhausted
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`
 - Fix deprecation warning for eql?

@@ -503,6 +503,39 @@ To round to the nearest cash value in currencies without small denominations:
 Money.from_cents(11_11, "CHF").to_nearest_cash_value.format # => "CHF 11.10"
 ```
 
+## Settlement
+
+Given a set of net balances in one currency (positive = should receive,
+negative = should pay, integers in the currency's smallest unit, summing to
+zero), `Money.settle` computes a set of transfers that zeroes everyone out
+using as few transfers as possible:
+
+```ruby
+result = Money.settle({ "alice" => 5, "bob" => 4, "carol" => -4, "dan" => -3, "erin" => -2 })
+result.optimal?   #=> true
+result.transfers  #=> [#<Money::Settlement::Transfer carol pays bob 4>,
+                  #     #<Money::Settlement::Transfer dan pays alice 3>,
+                  #     #<Money::Settlement::Transfer erin pays alice 2>]
+```
+
+Note that a greedy "largest creditor pays largest debtor" strategy would need
+four transfers here; the optimum is three. The optimum equals
+`participants - zero_sum_groups`, and the result carries a reviewable
+optimality basis (`result.proof`) which can be re-checked independently with
+`Money::Settlement.verify(balances, result)`.
+
+Finding the optimum is NP-hard, so large instances accept a search budget.
+When the budget is exhausted, the result separates the current feasible
+solution from the proven bounds instead of claiming optimality:
+
+```ruby
+result = Money.settle(balances, max_nodes: 1_000)
+result.status       #=> :budget_exhausted
+result.transfers    #=> best feasible solution found so far
+result.lower_bound  #=> proven minimum number of transfers
+result.upper_bound  #=> transfers in the returned solution
+```
+
 ## Ruby on Rails
 
 To integrate money in a Rails application use [money-rails](https://github.com/RubyMoney/money-rails).
