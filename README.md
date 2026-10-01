@@ -460,6 +460,39 @@ If you would like to customize currency symbols to avoid ambiguity between curre
 Money::Currency.table[:hkd][:symbol] = 'HK$'
 ```
 
+## Tax Breakdown
+
+`Money::TaxBreakdown` reconstructs an integer net amount and per-tax amounts from a tax-inclusive total. It is a policy-free calculator: callers provide exact non-negative rates, tax-base dependencies, and a rounding mode for each tax.
+
+All input and output monetary values are integers in the currency's smallest unit. Rates must be `Integer`, `Rational`, or exact decimal `BigDecimal` values; `Float` rates are rejected.
+
+```ruby
+taxes = [
+  { name: :first, rate: Rational(1, 10), base: :net },
+  { name: :second, rate: BigDecimal("0.1"), base: [:net, :first] },
+]
+
+Money::TaxBreakdown.find(121, taxes)
+#=> #<Money::TaxBreakdown::Result net_amount=100
+#    tax_amounts={:first=>10, :second=>11} total=121>
+```
+
+Dependencies may refer to `:net` or another tax name and must form an acyclic graph. Supported rounding values are `:down`, `:up`, `:half_up`, `:half_down`, and `:half_even`, plus the corresponding `BigDecimal::ROUND_*` constants. A per-tax value overrides the global default:
+
+```ruby
+Money::TaxBreakdown.find(107, [
+  { name: :tax, rate: Rational(7, 100), base: :net, rounding: :half_up },
+])
+```
+
+The forward calculation is strictly increasing: a larger net amount adds one unit to the net base, while non-negative rates and rounding make every tax amount non-decreasing. Therefore a matching net amount is unique when it exists. If item-by-item rounding skips the requested total, `find` returns `nil` rather than adding a balancing cent:
+
+```ruby
+Money::TaxBreakdown.calculate(4, taxes).total #=> 4
+Money::TaxBreakdown.calculate(5, taxes).total #=> 7
+Money::TaxBreakdown.find(5, taxes)            #=> nil
+```
+
 ## Rounding
 
 By default, `Money` objects are rounded to the nearest cent and the additional precision is not preserved:

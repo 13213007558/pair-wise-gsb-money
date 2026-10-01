@@ -1,0 +1,35 @@
+class Money
+  class TaxBreakdown
+    class Result
+      attr_reader net_amount: Integer
+      attr_reader tax_amounts: Hash[Symbol, Integer]
+      attr_reader total: Integer
+
+      def initialize: (Integer net_amount, Hash[Symbol, Integer] tax_amounts) -> void
+      def to_h: () -> { net_amount: Integer, tax_amounts: Hash[Symbol, Integer], total: Integer }
+      def ==: (untyped other) -> bool
+      def eql?: (untyped other) -> bool
+      def hash: () -> Integer
+    end
+
+    ROUNDING_MODES: Hash[Symbol | Integer, Symbol]
+
+    def self.find: (
+      Integer total,
+      Array[Hash[Symbol, untyped]] taxes,
+      ?rounding: Symbol | Integer
+    ) -> Result?
+
+    def self.calculate: (
+      Integer net_amount,
+      Array[Hash[Symbol, untyped]] taxes,
+      ?rounding: Symbol | Integer
+    ) -> Result
+
+    private
+
+    # The constructor and private helper signatures intentionally remain
+    # dynamic because they normalize flexible public tax-definition hashes.
+    def initialize: (untyped taxes, ?default_rounding: untyped) -> void
+  end
+end
