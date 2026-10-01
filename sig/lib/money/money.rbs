@@ -240,6 +240,19 @@ class Money
   #   end
   def self.with_rounding_mode: (untyped mode) { () -> untyped } -> untyped
 
+  # Returns the currently active arithmetic context, if any.
+  #
+  # @return [Money::ArithmeticContext, nil]
+  #
+  # @see Money.with_arithmetic_context
+  def self.arithmetic_context: () -> Money::ArithmeticContext?
+
+  # Enters an explicitly scoped arithmetic context for money calculations
+  # that must not silently drop decimals (e.g. settlement code).
+  #
+  # @see Money::ArithmeticContext
+  def self.with_arithmetic_context: (?rounding_mode: untyped, ?precision: ::Integer, ?traps: Array[Symbol]) { (Money::ArithmeticContext) -> untyped } -> untyped
+
   # Temporarily changes the default bank in the current thread only
   #
   # @param [Money::Bank::Base] bank The bank to use within the block

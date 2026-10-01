@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Money.with_arithmetic_context`: an explicitly entered, fiber- and thread-local arithmetic context that configures rounding mode and precision for division, multiplication, currency exchange and explicit quantization, records `:rounded` / `:inexact` precision signals, and raises `Money::ArithmeticContext::Rounded` / `Money::ArithmeticContext::Inexact` for trapped signals
 - Fix `Money::Allocation.generate` converting a Rational with unlimited `to_d` precision. It now uses `Money.conversion_precision`
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`

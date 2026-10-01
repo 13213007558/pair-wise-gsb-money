@@ -503,6 +503,39 @@ To round to the nearest cash value in currencies without small denominations:
 Money.from_cents(11_11, "CHF").to_nearest_cash_value.format # => "CHF 11.10"
 ```
 
+### Arithmetic contexts
+
+Code that must not silently drop decimals (e.g. settlement code) can run
+inside an explicitly entered arithmetic context. The context configures the
+rounding mode and precision used by division, multiplication, currency
+exchange and explicit quantization, and records every precision signal that
+occurs while it is active:
+
+- `:rounded` - the delivered representation had to discard digits to fit the
+  precision, even if the discarded digits were zeros and the value is
+  unchanged.
+- `:inexact` - the delivered value differs from the exact mathematical
+  result. Implies `:rounded`.
+
+```ruby
+Money.with_arithmetic_context(precision: 0, traps: [:inexact]) do |context|
+  Money.new(100) / 4              # exact, records nothing
+  Money.new(1) / 3                # raises Money::ArithmeticContext::Inexact
+end
+
+Money.with_arithmetic_context(precision: 0) do |context|
+  Money.new(100) * BigDecimal("1.5")
+  context.rounded? #=> true  (representation was shortened: 150.0 -> 150)
+  context.inexact? #=> false (value did not change)
+end
+```
+
+Trapped signals raise `Money::ArithmeticContext::Rounded` or
+`Money::ArithmeticContext::Inexact`; only operations that actually violate
+the configuration raise. Contexts can be nested (exiting an inner context
+restores the outer one) and are local to the current thread and fiber, so
+concurrent execution never leaks configuration across threads or fibers.
+
 ## Ruby on Rails
 
 To integrate money in a Rails application use [money-rails](https://github.com/RubyMoney/money-rails).

@@ -1,0 +1,76 @@
+class Money
+  # An explicitly entered arithmetic context for money calculations that must
+  # not silently drop decimals (e.g. settlement code).
+  #
+  # @see Money.with_arithmetic_context
+  class ArithmeticContext
+    # Signals recorded by the context.
+    SIGNALS: Array[Symbol]
+
+    # Symbolic aliases accepted for BigDecimal rounding modes.
+    ROUNDING_MODES: Hash[Symbol, Integer]
+
+    # Base class for errors raised by trapped precision signals.
+    class SignalError < StandardError
+      # @return [Symbol] the signal that was trapped (:rounded or :inexact)
+      attr_reader signal: Symbol
+
+      # @return [Money::ArithmeticContext] the context that raised
+      attr_reader context: Money::ArithmeticContext
+
+      def initialize: (Symbol signal, Money::ArithmeticContext context) -> void
+    end
+
+    # Raised when the +:rounded+ signal is trapped.
+    class Rounded < SignalError
+      def initialize: (Money::ArithmeticContext context) -> void
+    end
+
+    # Raised when the +:inexact+ signal is trapped.
+    class Inexact < SignalError
+      def initialize: (Money::ArithmeticContext context) -> void
+    end
+
+    # @return [BigDecimal::ROUND_MODE] rounding mode applied by this context
+    attr_reader rounding_mode: untyped
+
+    # @return [Integer] number of fractional decimal digits results are quantized to
+    attr_reader precision: Integer
+
+    # @return [Array<Symbol>] signals that raise instead of being recorded
+    attr_reader traps: Array[Symbol]
+
+    # @return [Array<Symbol>] precision signals recorded so far
+    attr_reader signals: Array[Symbol]
+
+    def initialize: (?rounding_mode: untyped, ?precision: Integer, ?traps: Array[Symbol]) -> void
+
+    # Whether the +:rounded+ signal has been recorded in this context.
+    def rounded?: () -> bool
+
+    # Whether the +:inexact+ signal has been recorded in this context.
+    def inexact?: () -> bool
+
+    # Whether the given signal has been recorded in this context.
+    def signal?: (Symbol name) -> bool
+
+    # Whether the given signal is trapped by this context.
+    def trap?: (Symbol name) -> bool
+
+    # Quantizes +value+, records precision signals and raises on trapped ones.
+    def apply: (BigDecimal value, ?precision: Integer, ?rounding_mode: untyped, ?scale: (Integer | Float), ?inexact: boolish) -> BigDecimal
+
+    # Number of fractional decimal digits needed to represent +value+ exactly.
+    def self.decimal_scale: (BigDecimal value) -> Integer
+
+    # Exact decimal scale of +dividend+ / +divisor+ and whether the quotient
+    # is inexact at any finite precision.
+    def self.division_scale: (BigDecimal dividend, BigDecimal divisor) -> [ (Integer | Float), bool? ]
+
+    def self.normalize_rounding_mode: (untyped mode) -> untyped
+
+    def self.normalize_precision: (untyped precision) -> Integer
+
+    def self.normalize_signal: (untyped signal) -> Symbol
+  end
+end

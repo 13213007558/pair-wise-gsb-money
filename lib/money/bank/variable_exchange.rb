@@ -132,7 +132,19 @@ class Money
 
       def exchange(fractional, rate, &)
         ex = fractional * BigDecimal(rate.to_s)
-        if block_given?
+        if (context = Money.arithmetic_context)
+          scale = ArithmeticContext.decimal_scale(fractional) +
+                  ArithmeticContext.decimal_scale(BigDecimal(rate.to_s))
+          quantized = context.apply(ex, scale: scale)
+
+          if block_given?
+            yield ex
+          elsif @rounding_method
+            @rounding_method.call(ex)
+          else
+            quantized
+          end
+        elsif block_given?
           yield ex
         elsif @rounding_method
           @rounding_method.call(ex)

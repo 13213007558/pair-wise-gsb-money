@@ -278,6 +278,62 @@ class Money
     Thread.current[:money_rounding_mode] = original_mode
   end
 
+  # Returns the currently active arithmetic context, if any.
+  #
+  # The context is fiber-local (and therefore also thread-local): contexts
+  # entered in one thread or fiber are never visible in another.
+  #
+  # @return [Money::ArithmeticContext, nil]
+  #
+  # @see Money.with_arithmetic_context
+  def self.arithmetic_context
+    Thread.current[:money_arithmetic_context]
+  end
+
+  # Enters an explicitly scoped arithmetic context for money calculations
+  # that must not silently drop decimals (e.g. settlement code).
+  #
+  # While the block runs, division, multiplication, currency exchange and
+  # explicit quantization are quantized with the context's rounding mode and
+  # precision, and precision signals (+:rounded+ / +:inexact+) are recorded
+  # on the context. Trapped signals raise instead of silently rounding.
+  #
+  # Contexts can be nested; exiting the block restores the enclosing
+  # context (or none). The context is fiber-local and thread-local.
+  #
+  # @param [BigDecimal::ROUND_MODE, Symbol, nil] rounding_mode rounding
+  #   applied when a result does not fit the precision. Defaults to
+  #   +Money.rounding_mode+.
+  # @param [Integer] precision number of fractional decimal digits kept for
+  #   results computed inside the context (0 = whole fractional units).
+  # @param [Array<Symbol>] traps any of :rounded, :inexact
+  #
+  # @yield [context] the entered Money::ArithmeticContext
+  #
+  # @return [Object] block results
+  #
+  # @example
+  #   Money.with_arithmetic_context(precision: 0, traps: [:inexact]) do |ctx|
+  #     Money.new(100) / 4  # exact, records nothing
+  #     Money.new(1) / 3    # raises Money::ArithmeticContext::Inexact
+  #   end
+  #
+  # @see Money::ArithmeticContext
+  def self.with_arithmetic_context(rounding_mode: nil, precision: 0, traps: [])
+    context = ArithmeticContext.new(
+      rounding_mode: rounding_mode || self.rounding_mode,
+      precision: precision,
+      traps: traps,
+    )
+    previous_context = Thread.current[:money_arithmetic_context]
+    Thread.current[:money_arithmetic_context] = context
+    begin
+      yield context
+    ensure
+      Thread.current[:money_arithmetic_context] = previous_context
+    end
+  end
+
   # Adds a new exchange rate to the default bank and return the rate.
   #
   # @param [Currency, String, Symbol] from_currency Currency to exchange from.
@@ -588,14 +644,30 @@ class Money
   #   on. Without infinite_precision values are rounded to the smallest unit of
   #   coinage automatically.
   #
+  #   When an arithmetic context is active (see +Money.with_arithmetic_context+)
+  #   and no explicit arguments are given, the context's rounding mode and
+  #   precision are used and precision signals are recorded on the context.
+  #
   # @return [Money]
   #
   # @example
   #   Money.new(10.1, 'USD').round #=> Money.new(10, 'USD')
   #
   # @see Money.default_infinite_precision
-  def round(rounding_mode = self.class.rounding_mode, rounding_precision = 0)
-    rounded_amount = as_d(@fractional).round(rounding_precision, rounding_mode)
+  # @see Money.with_arithmetic_context
+  def round(rounding_mode = nil, rounding_precision = nil)
+    context = self.class.arithmetic_context
+    rounding_mode ||= context ? context.rounding_mode : self.class.rounding_mode
+    rounding_precision ||= context ? context.precision : 0
+
+    exact = as_d(@fractional)
+    rounded_amount =
+      if context
+        context.apply(exact, precision: rounding_precision, rounding_mode: rounding_mode)
+      else
+        exact.round(rounding_precision, rounding_mode)
+      end
+
     dup_with(fractional: rounded_amount)
   end
 

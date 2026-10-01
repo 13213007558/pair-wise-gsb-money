@@ -167,6 +167,10 @@ class Money
     # +Money+ object with this monetary value and the same currency.
     #
     # Note that you can't multiply a Money object by an other +Money+ object.
+    # When an arithmetic context is active (see
+    # +Money.with_arithmetic_context+) the result is quantized with the
+    # context's rounding mode and precision, and precision signals are
+    # recorded on the context.
     #
     # @param [Numeric] value Number to multiply by.
     #
@@ -180,7 +184,15 @@ class Money
     def *(other)
       other = other.value if other.is_a?(CoercedNumeric)
       if other.is_a? Numeric
-        dup_with(fractional: fractional * other)
+        if (context = self.class.arithmetic_context)
+          multiplicand = as_d(@fractional)
+          multiplier = as_d(other)
+          scale = ArithmeticContext.decimal_scale(multiplicand) +
+                  ArithmeticContext.decimal_scale(multiplier)
+          dup_with(fractional: context.apply(multiplicand * multiplier, scale: scale))
+        else
+          dup_with(fractional: fractional * other)
+        end
       else
         raise TypeError, "Can't multiply a #{self.class.name} by a #{other.class.name}'s value"
       end
@@ -189,6 +201,10 @@ class Money
     # Divides the monetary value with the given number and returns a new +Money+
     # object with this monetary value and the same currency.
     # Can also divide by another +Money+ object to get a ratio.
+    # When an arithmetic context is active (see
+    # +Money.with_arithmetic_context+) the result of dividing by a number is
+    # quantized with the context's rounding mode and precision, and precision
+    # signals are recorded on the context.
     #
     # +Money/Numeric+ returns +Money+. +Money/Money+ returns +Float+.
     #
@@ -213,7 +229,13 @@ class Money
         other = as_d(other)
         raise ZeroDivisionError, "divided by zero" if other.zero?
 
-        dup_with(fractional: fractional / other)
+        if (context = self.class.arithmetic_context)
+          dividend = as_d(@fractional)
+          scale, inexact = ArithmeticContext.division_scale(dividend, other)
+          dup_with(fractional: context.apply(dividend / other, scale: scale, inexact: inexact))
+        else
+          dup_with(fractional: fractional / other)
+        end
       end
     end
 
