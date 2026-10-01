@@ -143,6 +143,139 @@ RSpec.describe Money::Allocation do
     end
   end
 
+  context "with bounded parts" do
+    let(:channels) do
+      [
+        {id: :fixed, weight: 0, min: 10},
+        {id: :second, weight: 1, max: 30},
+        {id: :third, weight: 1, max: 30},
+        {id: :open, weight: 1},
+      ]
+    end
+
+    it "honors minimums, maximums and weight" do
+      result = described_class.generate(101, channels)
+
+      expect(result).to eq(
+        [
+          {id: :fixed, amount: 10},
+          {id: :second, amount: 30},
+          {id: :third, amount: 30},
+          {id: :open, amount: 31},
+        ],
+      )
+      expect(result.sum { |allocation| allocation.fetch(:amount) }).to eq(101)
+    end
+
+    it "caps multiple channels in the same allocation round" do
+      parts = [
+        {id: 1, weight: 3, max: 30},
+        {id: 2, weight: 3, max: 30},
+        {id: 3, weight: 3, max: 30},
+        {id: 4, weight: 1},
+      ]
+
+      expect(described_class.generate(101, parts)).to eq(
+        [
+          {id: 1, amount: 30},
+          {id: 2, amount: 30},
+          {id: 3, amount: 30},
+          {id: 4, amount: 11},
+        ],
+      )
+    end
+
+    it "splits all-zero weights evenly with stable remainder order" do
+      parts = [
+        {id: 3, weight: 0},
+        {id: 2, weight: 0},
+        {id: 1, weight: 0},
+      ]
+
+      expect(described_class.generate(100, parts)).to eq(
+        [
+          {id: 3, amount: 33},
+          {id: 2, amount: 33},
+          {id: 1, amount: 34},
+        ],
+      )
+    end
+
+    it "keeps zero-weight channels at their minimum until positive weights are capped" do
+      parts = [
+        {id: 3, weight: 0},
+        {id: 2, weight: 1},
+        {id: 1, weight: 1},
+      ]
+
+      expect(described_class.generate(101, parts)).to eq(
+        [
+          {id: 3, amount: 0},
+          {id: 2, amount: 50},
+          {id: 1, amount: 51},
+        ],
+      )
+    end
+
+    it "is independent of input array order" do
+      result = described_class.generate(101, channels.reverse).to_h { |allocation| allocation.values_at(:id, :amount) }
+
+      expect(result).to eq(fixed: 10, second: 30, third: 30, open: 31)
+    end
+
+    it "returns a hash keyed by stable id" do
+      parts = channels.each_with_object({}) { |channel, result| result[channel.fetch(:id)] = channel }
+
+      expect(described_class.generate(101, parts)).to eq(
+        fixed: 10,
+        second: 30,
+        third: 30,
+        open: 31,
+      )
+    end
+
+    it "allocates refunds by magnitude and negates every result" do
+      result = described_class.generate(-101, channels)
+
+      expect(result).to eq(
+        [
+          {id: :fixed, amount: -10},
+          {id: :second, amount: -30},
+          {id: :third, amount: -30},
+          {id: :open, amount: -31},
+        ],
+      )
+      expect(result.sum { |allocation| allocation.fetch(:amount) }).to eq(-101)
+    end
+
+    it "rejects one cent when two channels each require one unit" do
+      expect { described_class.generate(1, [{id: 1, min: 1}, {id: 2, min: 1}]) }
+        .to raise_error(ArgumentError, "amount is less than the total minimum (2)")
+    end
+
+    it "reports when the total maximum is too small" do
+      parts = [{id: 1, max: 30}, {id: 2, max: 30}, {id: 3, max: 30}]
+
+      expect { described_class.generate(101, parts) }
+        .to raise_error(ArgumentError, "amount exceeds the total maximum (90)")
+    end
+
+    it "does not return a half smallest-unit allocation" do
+      expect { described_class.generate(1.5, channels) }
+        .to raise_error(ArgumentError, "amount must be a whole number of smallest currency units")
+    end
+
+    it "rejects duplicate stable ids" do
+      expect { described_class.generate(101, [{id: 1, min: 1}, {id: 1}]) }
+        .to raise_error(ArgumentError, "allocation ids must be unique")
+    end
+
+    it "rejects numeric and hash parts mixed in the same array" do
+      expect { described_class.generate(101, [1, {max: 30}]) }
+        .to raise_error(ArgumentError, "allocation parts must be numeric or hashes, not both")
+    end
+  end
+
   context "with an allocation seen in the wild" do
     it "allocates the full amount" do
       amount = 700273

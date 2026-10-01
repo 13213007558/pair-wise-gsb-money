@@ -8,17 +8,19 @@ class Money
     # The parts can be specified as:
     #   Numeric — performs the split between a given number of parties evenly
     #   Array<Numeric> — allocates the amounts proportionally to the given array
+    #   Array<Hash> — allocates whole smallest units with weight, minimum, and maximum
+    #   Hash — behaves like Array<Hash>, where each key is the stable allocation ID
     #
     # @param amount [Numeric] The total amount to be allocated.
-    # @param parts [Numeric, Array<Numeric>] Number of parts to split into or an array (proportions for allocation).
-    # @param decimal_cutoff [bool | Integer] Controls per-split precision:
-    #   - When true, splits are truncated to whole amounts.
-    #   - When an Integer N, splits are rounded to N decimal places.
-    #   - When false or nil, no rounding/truncation is applied.
-    #   Defaults to true (whole amounts).
-    #
-    # @return [Array[Numeric]] An array containing the allocated amounts.
-    # @raise [ArgumentError] If parts is empty or not provided.
-    def self.generate: (Numeric amount, (Numeric | Array[Numeric]) parts, ?(bool | Integer) decimal_cutoff) -> Array[Numeric]
+    # @param parts [Numeric | Array[Numeric] | Array[Hash[Symbol, untyped]] |
+    #   Hash[untyped, Hash[Symbol, untyped]]] Parts.
+    # @param decimal_cutoff [bool | Integer] Controls unrestricted per-split precision.
+    # @return [Array[Numeric] | Array[Hash[Symbol, untyped]] | Hash[untyped, Numeric]] Allocated amounts.
+    # @raise [ArgumentError] If parts or bounds are invalid, or the bounds are infeasible.
+    def self.generate: (
+      Numeric amount,
+      Numeric | Array[Numeric] | Array[Hash[Symbol, untyped]] | Hash[untyped, Hash[Symbol, untyped]] parts,
+      ?(bool | Integer) decimal_cutoff
+    ) -> (Array[Numeric] | Array[Hash[Symbol, untyped]] | Hash[untyped, Numeric])
   end
 end

@@ -556,17 +556,18 @@ class Money
     exchange_to("EUR")
   end
 
-  # Splits a given amount in parts without losing pennies. The left-over pennies will be
-  # distributed round-robin amongst the parties. This means that parts listed first will likely
-  # receive more pennies than ones listed later.
+  # Splits a given amount in parts without losing pennies. Unrestricted left-over pennies
+  # are distributed round-robin, while bounded allocations distribute them by stable ID.
   #
   # Pass [2, 1, 1] as input to give twice as much to part1 as part2 or
-  # part3 which results in 50% of the cash to party1, 25% to part2, and 25% to part3. Passing a
-  # number instead of an array will split the amount evenly (without losing pennies when rounding).
+  # part3 which results in 50% of the cash to party1, 25% to part2, and 25% to part3. Hashes may
+  # provide +weight+, +min+ and +max+; a hash keyed by stable ID returns a hash of Money objects.
+  # Negative amounts allocate the magnitude first and negate every result, so bounds describe
+  # refund magnitudes.
   #
-  # @param [Array<Numeric>, Numeric] parts how amount should be distributed to parts
+  # @param [Array<Numeric>, Array<Hash>, Hash, Numeric] parts how amount should be distributed
   #
-  # @return [Array<Money>]
+  # @return [Array<Money>, Array<Hash>, Hash]
   #
   # @example
   #   Money.new(5,   "USD").allocate([3, 7]) #=> [Money.new(2), Money.new(3)]
@@ -576,7 +577,21 @@ class Money
   #
   def allocate(parts)
     amounts = Money::Allocation.generate(fractional, parts, !Money.default_infinite_precision)
-    amounts.map { |amount| dup_with(fractional: amount) }
+
+    case parts
+    when Hash
+      amounts.transform_values { |amount| dup_with(fractional: amount) }
+    when Array
+      if parts.any?(Hash)
+        amounts.map do |allocation|
+          allocation.merge(amount: dup_with(fractional: allocation.fetch(:amount)))
+        end
+      else
+        amounts.map { |amount| dup_with(fractional: amount) }
+      end
+    else
+      amounts.map { |amount| dup_with(fractional: amount) }
+    end
   end
 
   alias split allocate

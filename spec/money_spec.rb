@@ -929,6 +929,43 @@ RSpec.describe Money do
       end
     end
 
+    context "with minimums and maximums" do
+      it "returns Money values with stable ids" do
+        parts = {
+          fixed: {weight: 0, min: 10},
+          second: {weight: 1, max: 30},
+          third: {weight: 1, max: 30},
+          open: {weight: 1},
+        }
+
+        result = Money.us_dollar(101).allocate(parts)
+
+        expect(result).to eq(
+          fixed: Money.us_dollar(10),
+          second: Money.us_dollar(30),
+          third: Money.us_dollar(30),
+          open: Money.us_dollar(31),
+        )
+        expect(result.values.sum).to eq(Money.us_dollar(101))
+      end
+
+      it "keeps Money values in array allocations" do
+        result = Money.us_dollar(101).allocate(
+          [
+            {id: :fixed, weight: 0, min: 10},
+            {id: :open, weight: 1},
+          ],
+        )
+
+        expect(result).to eq(
+          [
+            {id: :fixed, amount: Money.us_dollar(10)},
+            {id: :open, amount: Money.us_dollar(91)},
+          ],
+        )
+      end
+    end
+
     it "keeps subclasses intact" do
       special_money_class = Class.new(Money)
       expect(special_money_class.new(5).allocate([1]).first).to be_a special_money_class
