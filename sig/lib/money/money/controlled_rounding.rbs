@@ -1,0 +1,33 @@
+class Money
+  # Solves the controlled rounding problem for a matrix of exact amounts.
+  class ControlledRounding
+    # The outcome of a controlled rounding computation.
+    class Result
+      attr_reader matrix: Array[Array[Integer]]?
+
+      attr_reader error: Rational?
+
+      attr_reader conflict_rows: Array[Integer]
+
+      attr_reader conflict_columns: Array[Integer]
+
+      attr_reader message: String?
+
+      def initialize: (matrix: Array[Array[Integer]]?, error: Rational?, conflict_rows: Array[Integer], conflict_columns: Array[Integer], message: String?) -> void
+
+      def feasible?: () -> bool
+
+      def infeasible?: () -> bool
+    end
+
+    def self.round: (Array[Array[Numeric]] matrix, row_totals: Array[Numeric], column_totals: Array[Numeric], ?locked: Hash[Array[Integer], Numeric]?, ?currency: (Currency | String | Symbol | nil)) -> Result
+
+    def self.brute_force: (Array[Array[Numeric]] matrix, row_totals: Array[Numeric], column_totals: Array[Numeric], ?locked: Hash[Array[Integer], Numeric]?, ?currency: (Currency | String | Symbol | nil), ?max_free_cells: Integer) -> Result
+
+    def initialize: (Array[Array[Numeric]] matrix, Array[Numeric] row_totals, Array[Numeric] column_totals, Hash[Array[Integer], Numeric]? locked, (Currency | String | Symbol | nil) currency) -> void
+
+    def solve: () -> Result
+
+    def solve_by_enumeration: (Integer max_free_cells) -> Result
+  end
+end

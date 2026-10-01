@@ -1,0 +1,11 @@
+class Money
+  class ControlledRounding
+    # Enumerates every combination of rounding decisions to find the exact
+    # optimum by brute force.
+    class ExhaustiveSearch
+      def initialize: (Array[Array[Integer]] free_cells, Array[Array[Rational]] fracs, Array[Integer] row_need, Array[Integer] column_need) -> void
+
+      def run: () -> Hash[Array[Integer], Integer]?
+    end
+  end
+end

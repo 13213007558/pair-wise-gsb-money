@@ -1,0 +1,25 @@
+class Money
+  class ControlledRounding
+    # A small directed graph with integer capacities and exact (rational)
+    # edge costs, solved with successive shortest augmenting paths.
+    class FlowNetwork
+      class Edge < Struct[untyped]
+        attr_accessor to: Integer
+
+        attr_accessor rev: Integer
+
+        attr_accessor cap: Integer
+
+        attr_accessor cost: Numeric
+      end
+
+      def initialize: (Integer size) -> void
+
+      def add_edge: (Integer from, Integer to, Integer cap, Numeric cost) -> Edge
+
+      def min_cost_flow: (Integer source, Integer sink, Integer target) -> Integer
+
+      def reachable_from: (Integer source) -> Array[bool]
+    end
+  end
+end
