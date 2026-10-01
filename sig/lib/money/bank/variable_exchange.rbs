@@ -98,6 +98,13 @@ class Money
 
       def exchange: (untyped fractional, untyped rate) ?{ (untyped) -> untyped } -> untyped
 
+      def best_exchange_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+      def find_best_exchange_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+      def best_exchange_path: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+      def exchange_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+      def best_conversion_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+      def find_best_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+
       # Registers a conversion rate and returns it (uses +#set_rate+).
       # Delegates to +Money::RatesStore::Memory+
       #

@@ -1,0 +1,74 @@
+class Money
+  module Bank
+    class ExchangeQuote
+      Edge: untyped
+
+      def initialize: (**untyped) -> void
+      def outgoing: (untyped currency) -> Array[untyped]
+      def each_edge: () { (untyped edge) -> void } -> void
+    end
+
+    class ExchangeHop
+      attr_reader from_currency: Money::Currency
+      attr_reader to_currency: Money::Currency
+      attr_reader rate: BigDecimal
+      attr_reader fee: Money
+      attr_reader input_amount: Money
+      attr_reader amount_after_fee: Money
+      attr_reader output_amount: Money
+
+      def initialize: (
+        from_currency: Money::Currency,
+        to_currency: Money::Currency,
+        rate: BigDecimal,
+        fee: Money,
+        input_amount: Money,
+        amount_after_fee: Money,
+        output_amount: Money
+      ) -> void
+
+      def from: () -> Money::Currency
+      def to: () -> Money::Currency
+      def amount: () -> Money
+      def amount_after: () -> Money
+      def before_amount: () -> Money
+      def []: (Symbol key) -> untyped
+      def to_h: () -> Hash[Symbol, untyped]
+    end
+
+    class ExchangeRoute
+      attr_reader input_amount: Money
+      attr_reader hops: Array[Money::Bank::ExchangeHop]
+
+      def initialize: (Money input_amount, Array[Money::Bank::ExchangeHop] hops) -> void
+
+      def final_amount: () -> Money
+      def amount: () -> Money
+      def money: () -> Money
+      def output_amount: () -> Money
+      def currencies: () -> Array[String]
+      def path: () -> Array[String]
+      def amounts: () -> Array[Money]
+      def fees: () -> Array[Money]
+      def rates: () -> Array[BigDecimal]
+      def hops_count: () -> Integer
+      def length: () -> Integer
+      def to_money: () -> Money
+      def []: (Symbol key) -> untyped
+      def to_a: () -> Array[Hash[Symbol, untyped]]
+      def to_h: () -> Hash[Symbol, untyped]
+    end
+
+    class ExchangeRoutePlanner
+      def initialize: (Money::Bank::Base bank) -> void
+
+      def call: (
+        Money from,
+        untyped target_currency,
+        Money::Bank::ExchangeQuote quote,
+        Integer max_hops,
+        ?untyped rounding_method: untyped
+      ) -> Money::Bank::ExchangeRoute?
+    end
+  end
+end

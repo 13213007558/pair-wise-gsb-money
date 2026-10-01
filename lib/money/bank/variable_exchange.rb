@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "money/bank/base"
+require "money/bank/exchange_route"
 require "money/rates_store/memory"
 require "json"
 require "yaml"
@@ -141,6 +142,34 @@ class Money
         end
       end
 
+      # Finds the bounded route receiving the largest destination amount.
+      # The supplied rates and fees are copied into an ExchangeQuote and do not
+      # change while this search is running.
+      def best_exchange_route(from, to_currency = nil, graph = nil,
+                               positional_fees = nil, positional_max_hops = nil,
+                               rates: nil, quotes: nil, edges: nil,
+                               fees: nil, fixed_fees: nil, edge_fees: nil,
+                               max_hops: 3, maximum_hops: nil, hop_limit: nil,
+                               max_jumps: nil, quote: nil,
+                               rounding_method: nil, rounding: nil,
+                               **keyword_options, &rounding_block)
+        to_currency, rates, quotes, fees, max_hops, quote = route_search_options(
+          to_currency, rates || graph, positional_fees, positional_max_hops,
+          quotes, edges, fees, fixed_fees, edge_fees, max_hops,
+          maximum_hops, hop_limit, max_jumps, quote, keyword_options,
+        )
+        rounding_method ||= rounding || rounding_block
+        quote ||= build_exchange_quote(rates, quotes, fees)
+        ExchangeRoutePlanner.new(self).call(
+          from, to_currency, quote, max_hops, rounding_method: rounding_method,
+        )
+      end
+      alias find_best_exchange_route best_exchange_route
+      alias best_exchange_path best_exchange_route
+      alias exchange_route best_exchange_route
+      alias best_conversion_route best_exchange_route
+      alias find_best_route best_exchange_route
+
       # Registers a conversion rate and returns it (uses +#set_rate+).
       # Delegates to +Money::RatesStore::Memory+
       #
@@ -276,6 +305,56 @@ class Money
         end
 
         self
+      end
+
+      private
+
+      def route_search_options(to_currency, graph, positional_fees, positional_max_hops,
+                               keyword_quotes, keyword_edges, keyword_fees,
+                               fixed_fees, edge_fees, keyword_max_hops,
+                               maximum_hops, hop_limit, max_jumps, quote, options)
+        option_target, option_graph, option_quotes, option_fees, option_quote,
+          option_hops = route_options(to_currency.is_a?(Hash) ? to_currency : options)
+
+        to_currency = option_target if to_currency.is_a?(Hash) || to_currency.nil?
+
+        graph = option_graph || graph
+        quotes = option_quotes || keyword_quotes || keyword_edges
+        fees = option_fees || keyword_fees || fixed_fees || edge_fees || positional_fees
+        quote = option_quote || quote || (graph if graph.is_a?(ExchangeQuote))
+        hops = option_hops || maximum_hops || hop_limit || max_jumps ||
+               positional_max_hops || keyword_max_hops
+        [to_currency, graph, quotes, fees, hops, quote]
+      end
+
+      def route_options(options)
+        [
+          option_value(options, :to, :target, :target_currency),
+          option_value(options, :rates, :graph, :exchange_rates, :rate_graph),
+          option_value(options, :quotes, :edges),
+          option_value(options, :fees, :fixed_fees, :edge_fees),
+          option_value(options, :quote),
+          option_value(options, :max_hops, :maximum_hops, :hop_limit, :max_jumps),
+        ]
+      end
+
+      def option_value(options, *keys)
+        symbol_key = keys.find { |key| options.key?(key) }
+        return options[symbol_key] if symbol_key
+
+        string_key = keys.find { |key| options.key?(key.to_s) }
+        options[string_key] if string_key
+      end
+
+      def build_exchange_quote(rates, quotes, fees)
+        rates = stored_route_rates if rates.nil? && quotes.nil? && store.respond_to?(:each_rate)
+        ExchangeQuote.new(rates: rates, quotes: quotes, fees: fees)
+      end
+
+      def stored_route_rates
+        store.each_rate.map do |from, to, rate|
+          { from: from, to: to, rate: rate }
+        end
       end
     end
   end

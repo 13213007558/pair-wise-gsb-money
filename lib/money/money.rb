@@ -520,6 +520,16 @@ class Money
     end
   end
 
+  # Finds the best bounded route through this money's bank. Returns an
+  # +Money::Bank::ExchangeRoute+ containing every hop, fee, and rounded amount.
+  def best_exchange_route(other_currency, *args, **options, &block)
+    @bank.best_exchange_route(self, other_currency, *args, **options, &block)
+  end
+  alias find_best_exchange_route best_exchange_route
+  alias best_exchange_path best_exchange_route
+  alias best_conversion_route best_exchange_route
+  alias find_best_route best_exchange_route
+
   # Receive a money object with the same amount as the current Money object
   # in United States dollar.
   #

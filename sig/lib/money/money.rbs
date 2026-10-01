@@ -422,6 +422,11 @@ class Money
   #   Money.new(2000, "USD").exchange_to("EUR") {|x| x.round}
   #   Money.new(2000, "USD").exchange_to(Currency.new("EUR"))
   def exchange_to: ((Money::Currency | string | Symbol) other_currency) { () -> int } -> Money
+  def best_exchange_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+  def find_best_exchange_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+  def best_exchange_path: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+  def best_conversion_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
+  def find_best_route: (*untyped arguments, **untyped options) ?{ (untyped) -> untyped } -> Money::Bank::ExchangeRoute?
 
   # Receive a money object with the same amount as the current Money object
   # in United States dollar.
