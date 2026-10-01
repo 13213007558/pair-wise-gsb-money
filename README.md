@@ -503,6 +503,36 @@ To round to the nearest cash value in currencies without small denominations:
 Money.from_cents(11_11, "CHF").to_nearest_cash_value.format # => "CHF 11.10"
 ```
 
+## Tax Decomposition
+
+`Money::TaxDecomposition` splits a tax-inclusive gross amount back into an integer
+net amount and per-tax amounts, all in the currency's minor unit (e.g. cents). Each
+tax declares an exact, non-negative rate, a base that may reference the net amount
+and/or other taxes (dependencies must be acyclic), and its own rounding rule
+(`:half_up`, `:half_down`, `:half_even`, `:down`, `:up`).
+
+```ruby
+result = Money::TaxDecomposition.decompose(11_547, [
+  { name: :gst, rate: Rational(5, 100),      base: [:net],       rounding: :half_up },
+  { name: :qst, rate: Rational(9975, 100_000), base: [:net, :gst], rounding: :half_up },
+])
+result.net   # => 10_000
+result.taxes # => { gst: 500, qst: 1047 }
+```
+
+Because rates are non-negative, the gross total is strictly increasing in the net
+amount, so any total has at most one exact decomposition. `decompose` returns that
+unique solution, or `nil` when the per-item rounding rules make the total
+unreachable — no penny adjustment is ever forced in. For example, a single 10% tax
+rounded `:half_up` maps net 4 to a gross of 4 and net 5 to a gross of 6, so a gross
+of 5 has no decomposition:
+
+```ruby
+Money::TaxDecomposition.decompose(5, [{ name: :vat, rate: Rational(1, 10) }]) # => nil
+```
+
+This is a pure calculation helper; it ships no jurisdiction-specific tax rules.
+
 ## Ruby on Rails
 
 To integrate money in a Rails application use [money-rails](https://github.com/RubyMoney/money-rails).

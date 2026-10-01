@@ -1,0 +1,56 @@
+class Money
+  # Decomposes a tax-inclusive gross amount into an integer net amount and
+  # per-tax amounts, all expressed in the currency's minor unit (e.g. cents).
+  #
+  # Each tax is computed from a base that may depend on the net amount and on
+  # other taxes (e.g. a tax levied on net + a previous tax). Dependencies must
+  # form an acyclic graph. Rates are exact, non-negative numbers and every tax
+  # is rounded individually to a whole minor unit according to its own
+  # rounding rule.
+  #
+  # Because rates are non-negative, the gross total is a strictly increasing
+  # function of the net amount, so any gross total has at most one exact
+  # integer decomposition. Returns the unique exact decomposition, or nil
+  # when the per-item rounding rules make the gross total unreachable.
+  class TaxDecomposition
+    # Raised when the tax base dependencies form a cycle.
+    class CyclicTaxBaseError < StandardError
+    end
+
+    ROUNDING_MODES: Array[Symbol]
+
+    # Definition of a single tax.
+    class Tax
+      attr_reader name: Symbol
+
+      attr_reader rate: Rational
+
+      attr_reader base: Array[Symbol]
+
+      attr_reader rounding: Symbol
+
+      def initialize: (name: Symbol | String, rate: Integer | Rational | String | BigDecimal, ?base: Array[Symbol | String] | Symbol | String, ?rounding: Symbol | String) -> void
+    end
+
+    # The unique exact decomposition of a gross total.
+    class Result
+      attr_reader net: Integer
+
+      attr_reader taxes: Hash[Symbol, Integer]
+
+      attr_reader total: Integer
+
+      def initialize: (net: Integer, taxes: Hash[Symbol, Integer], total: Integer) -> void
+
+      def ==: (untyped other) -> bool
+
+      def eql?: (untyped other) -> bool
+
+      def hash: () -> Integer
+    end
+
+    def self.decompose: (Integer total, Array[Tax | Hash[Symbol, untyped]] taxes) -> Result?
+
+    def self.gross_for: (Integer net, Array[Tax | Hash[Symbol, untyped]] taxes) -> Integer
+  end
+end
