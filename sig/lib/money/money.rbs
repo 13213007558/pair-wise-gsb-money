@@ -252,6 +252,27 @@ class Money
   #   end
   def self.with_bank: (Money::Bank::Base bank) { () -> untyped } -> untyped
 
+  # Round a matrix of exact amounts to whole smallest currency units while
+  # keeping prescribed row and column totals exact.
+  #
+  # @param [Array<Array<Money, Integer, Rational, BigDecimal>>] matrix
+  #   amounts in the smallest currency unit
+  # @param [Array<Money, Integer, Rational, BigDecimal>] row_totals
+  #   required total of each row, in whole smallest currency units
+  # @param [Array<Money, Integer, Rational, BigDecimal>] column_totals
+  #   required total of each column, in whole smallest currency units
+  # @param [Hash{Array(Integer, Integer) => Integer}] locked
+  #   cells fixed to a whole-unit value, keyed by [row, column] indexes
+  #
+  # @return [Money::ControlledRounding::Result]
+  #
+  # @see Money::ControlledRounding
+  def self.controlled_round: (Array[Array[Money | Integer | Rational | BigDecimal]] matrix,
+                              row_totals: Array[Money | Integer | Rational | BigDecimal],
+                              column_totals: Array[Money | Integer | Rational | BigDecimal],
+                              ?locked: Hash[Array[Integer], Integer])
+                            -> Money::ControlledRounding::Result
+
   # Adds a new exchange rate to the default bank and return the rate.
   #
   # @param [Currency, String, Symbol] from_currency Currency to exchange from.

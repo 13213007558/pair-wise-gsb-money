@@ -503,6 +503,44 @@ To round to the nearest cash value in currencies without small denominations:
 Money.from_cents(11_11, "CHF").to_nearest_cash_value.format # => "CHF 11.10"
 ```
 
+### Controlled rounding of tables
+
+When a table of exact amounts (e.g. a cost allocation matrix) has to be
+rounded to whole smallest currency units, rounding each cell independently
+usually breaks the row and column totals. `Money.controlled_round` rounds
+every cell to either its floor or its ceil so that the prescribed row and
+column totals are matched exactly and the total absolute rounding error is
+minimized. Amounts are exact rationals (`Rational`, `BigDecimal`, `Integer`
+or `Money` with `infinite_precision`), so any currency works, including
+non-cent-based ones, and negative amounts are supported.
+
+```ruby
+result = Money.controlled_round(
+  [[Rational(6, 5), Rational(13, 10)], [Rational(7, 10), Rational(12, 5)]],
+  row_totals: [3, 3],
+  column_totals: [2, 4],
+)
+result.feasible? # => true
+result.matrix    # => [[1, 2], [1, 2]] (whole smallest units)
+result.error     # => Rational(8, 5) (total absolute rounding error)
+```
+
+Individual cells can be fixed with `locked: { [row, column] => value }`.
+When the totals are mutually incompatible, the result is infeasible and
+`result.conflict` names the conflicting set of rows and columns:
+
+```ruby
+result = Money.controlled_round(
+  [[Rational(1, 2), Rational(1, 2)], [Rational(1, 2), Rational(1, 2)]],
+  row_totals: [2, 0],
+  column_totals: [2, 0],
+)
+result.feasible?        # => false
+result.conflict.rows    # => [0]
+result.conflict.columns # => [1]
+result.conflict.message # => "rows [0] require 2 upward rounding(s), ..."
+```
+
 ## Ruby on Rails
 
 To integrate money in a Rails application use [money-rails](https://github.com/RubyMoney/money-rails).

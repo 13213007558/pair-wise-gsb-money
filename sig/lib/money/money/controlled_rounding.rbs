@@ -1,0 +1,62 @@
+class Money
+  # Rounds every cell of a matrix of exact amounts either down or up to a
+  # whole number of smallest currency units (e.g. cents), so that the
+  # rounded matrix matches prescribed row and column totals exactly while
+  # the total absolute rounding error is minimized.
+  class ControlledRounding
+    # Explains why a rounding problem has no feasible solution.
+    #
+    # +rows+ and +columns+ are the indexes of a conflicting set of rows and
+    # columns: those rows demand more (or fewer) upward roundings than those
+    # columns are able to absorb, so no choice of floor/ceil values can
+    # satisfy all of the totals at once.
+    class Conflict
+      attr_reader rows: Array[Integer]
+
+      attr_reader columns: Array[Integer]
+
+      attr_reader message: String
+
+      def initialize: (rows: Array[Integer], columns: Array[Integer], message: String) -> void
+
+      def to_s: () -> String
+    end
+
+    # The outcome of a controlled rounding run.
+    class Result
+      # @return [Array<Array<Integer>>, nil] the rounded matrix in smallest
+      #   currency units, or nil when the problem is infeasible
+      attr_reader matrix: Array[Array[Integer]]?
+
+      # @return [Rational, nil] the total absolute rounding error, or nil
+      #   when the problem is infeasible
+      attr_reader error: Rational?
+
+      # @return [Conflict, nil] an explanation of the conflict when the
+      #   problem is infeasible
+      attr_reader conflict: Conflict?
+
+      def initialize: (matrix: Array[Array[Integer]]?, error: Rational?, conflict: Conflict?) -> void
+
+      def feasible?: () -> bool
+    end
+
+    # Round a matrix of exact amounts to whole smallest currency units.
+    #
+    # @param matrix [Array<Array<Money, Integer, Rational, BigDecimal>>]
+    #   the amounts, expressed in the smallest currency unit
+    # @param row_totals [Array<Money, Integer, Rational, BigDecimal>] the
+    #   required total of each row, in whole smallest currency units
+    # @param column_totals [Array<Money, Integer, Rational, BigDecimal>]
+    #   the required total of each column, in whole smallest currency units
+    # @param locked [Hash{Array(Integer, Integer) => Integer}] cells fixed
+    #   to a given whole-unit value, keyed by [row, column] indexes
+    #
+    # @return [Result]
+    def self.round: (Array[Array[Money | Integer | Rational | BigDecimal]] matrix,
+                     row_totals: Array[Money | Integer | Rational | BigDecimal],
+                     column_totals: Array[Money | Integer | Rational | BigDecimal],
+                     ?locked: Hash[Array[Integer], Integer])
+                   -> Result
+  end
+end

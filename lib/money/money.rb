@@ -6,6 +6,7 @@ require "money/money/arithmetic"
 require "money/money/constructors"
 require "money/money/formatter"
 require "money/money/allocation"
+require "money/money/controlled_rounding"
 require "money/money/locale_backend"
 
 # "Money is any object or record that is generally accepted as payment for
@@ -213,6 +214,40 @@ class Money
     yield
   ensure
     Thread.current[:money_bank] = original_bank
+  end
+
+  # Round a matrix of exact amounts to whole smallest currency units while
+  # keeping prescribed row and column totals exact.
+  #
+  # Each cell of the returned matrix is either the floor or the ceil of the
+  # original amount (in smallest currency units), every row and column adds
+  # up to its required total, and the total absolute rounding error is
+  # minimized. Cells may be locked to a fixed value. When the totals are
+  # mutually incompatible, the result describes the conflicting rows and
+  # columns instead of a matrix.
+  #
+  # @param [Array<Array<Money, Integer, Rational, BigDecimal>>] matrix
+  #   amounts in the smallest currency unit
+  # @param [Array<Money, Integer, Rational, BigDecimal>] row_totals
+  #   required total of each row, in whole smallest currency units
+  # @param [Array<Money, Integer, Rational, BigDecimal>] column_totals
+  #   required total of each column, in whole smallest currency units
+  # @param [Hash{Array(Integer, Integer) => Integer}] locked
+  #   cells fixed to a whole-unit value, keyed by [row, column] indexes
+  #
+  # @return [Money::ControlledRounding::Result]
+  #
+  # @example
+  #   result = Money.controlled_round(
+  #     [[Rational(6, 5), Rational(13, 10)], [Rational(7, 10), Rational(12, 5)]],
+  #     row_totals: [3, 3],
+  #     column_totals: [2, 4],
+  #   )
+  #   result.matrix # => [[1, 2], [1, 2]]
+  #
+  # @see Money::ControlledRounding
+  def self.controlled_round(matrix, row_totals:, column_totals:, locked: {})
+    ControlledRounding.round(matrix, row_totals: row_totals, column_totals: column_totals, locked: locked)
   end
 
   def self.locale_backend=(value)

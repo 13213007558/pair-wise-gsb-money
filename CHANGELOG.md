@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Money.controlled_round` / `Money::ControlledRounding.round`: controlled rounding of a matrix of exact amounts to whole smallest currency units, matching prescribed row and column totals exactly, minimizing the total absolute rounding error, supporting locked cells, negative amounts and non-cent-based currencies, and reporting the conflicting rows and columns when the totals are infeasible
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`
 - Fix deprecation warning for eql?
