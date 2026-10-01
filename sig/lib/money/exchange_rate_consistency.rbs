@@ -1,0 +1,36 @@
+class Money
+  class ExchangeRateConsistency
+    class Edge < Data
+      attr_reader from: String
+      attr_reader to: String
+      attr_reader rate: Numeric | String
+      attr_reader rational_rate: Rational
+    end
+
+    class Result < Data
+      attr_reader status: Symbol
+      attr_reader path: Array[String]?
+      attr_reader edges: Array[Edge]
+      attr_reader product: Rational?
+      attr_reader budget_remaining: Integer?
+
+      def found?: () -> bool
+      def incomplete?: () -> bool
+      def complete?: () -> bool
+      def rates: () -> Array[Numeric | String]
+      def product_rational: () -> Rational?
+    end
+
+    class InvalidSnapshot < ArgumentError
+    end
+
+    class InvalidRate < ArgumentError
+    end
+
+    def self.find_profitable_cycle: (untyped snapshot, ?budget: Integer?) -> Result
+    def self.check: (untyped snapshot, ?budget: Integer?) -> Result
+
+    def initialize: (untyped snapshot) -> void
+    def find_profitable_cycle: (?budget: Integer?) -> Result
+  end
+end

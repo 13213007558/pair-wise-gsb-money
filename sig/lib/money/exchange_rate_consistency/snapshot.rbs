@@ -1,0 +1,13 @@
+class Money
+  class ExchangeRateConsistency
+    class Snapshot
+      attr_reader adjacency: Hash[String, Hash[String, Edge]]
+      attr_reader vertices: Array[String]
+
+      def self.build: (untyped snapshot) -> { adjacency: Hash[String, Hash[String, Edge]], vertices: Array[String] }
+
+      def initialize: (untyped snapshot) -> void
+      def build: () -> { adjacency: Hash[String, Hash[String, Edge]], vertices: Array[String] }
+    end
+  end
+end
