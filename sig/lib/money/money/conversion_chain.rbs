@@ -1,0 +1,63 @@
+class Money
+  class ConversionChain
+    class RationalInterval
+      attr_reader lower: Rational
+      attr_reader upper: Rational
+      attr_reader lower_inclusive: bool
+      attr_reader upper_inclusive: bool
+
+      def empty?: () -> bool
+    end
+
+    class Step
+      attr_reader from_currency: Money::Currency
+      attr_reader to_currency: Money::Currency
+      attr_reader rate: Rational
+      attr_reader fixed_fee: Rational
+      attr_reader rounding_mode: Integer
+
+      def initialize: (
+        rate: (Integer | Rational | BigDecimal | Money),
+        to_currency: (String | Symbol | Money::Currency),
+        from_currency: (String | Symbol | Money::Currency),
+        ?fixed_fee: (Integer | Rational | BigDecimal | Money),
+        ?rounding_mode: Integer
+      ) -> void
+
+      def convert: (Money) -> Money
+      def match_source?: ((String | Symbol | Money::Currency)) -> bool
+      def preimage: (Integer, Integer) -> RationalInterval
+    end
+
+    attr_reader source_currency: Money::Currency
+    attr_reader steps: Array[Step]
+
+    def initialize: (
+      (String | Symbol | Money::Currency),
+      Array[Step | Hash[Symbol, untyped]]
+    ) -> void
+
+    def self.from_steps: (
+      Array[Step | Hash[Symbol, untyped]],
+      source_currency: (String | Symbol | Money::Currency | nil)
+    ) -> ConversionChain
+
+    def target_currency: () -> Money::Currency
+    def convert: ((Money | Integer | Rational | BigDecimal)) -> Money
+    def reverse: ((Money | Integer | Rational | BigDecimal), Range[Integer]) -> Array[Range[Integer]]
+  end
+
+  def self.reverse_convert: (
+    (Money | Integer | Rational | BigDecimal),
+    Range[Integer],
+    (ConversionChain | Array[Hash[Symbol, untyped]]),
+    ?from_currency: (String | Symbol | Money::Currency | nil)
+  ) -> Array[Range[Integer]]
+
+  def self.reverse_exchange: (
+    (Money | Integer | Rational | BigDecimal),
+    Range[Integer],
+    (ConversionChain | Array[Hash[Symbol, untyped]]),
+    ?from_currency: (String | Symbol | Money::Currency | nil)
+  ) -> Array[Range[Integer]]
+end
