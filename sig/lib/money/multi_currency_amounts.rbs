@@ -1,0 +1,73 @@
+class Money
+  class MultiCurrencyAmounts
+    include Enumerable[Money]
+
+    @bank: untyped
+    @amounts: Hash[String, Money]
+
+    def self.[]: (*untyped amounts, ?bank: untyped) -> MultiCurrencyAmounts
+
+    def initialize: (*untyped amounts, ?bank: untyped) -> void
+
+    attr_reader bank: untyped
+
+    def []: (untyped currency) -> Money
+
+    def +: (untyped other) -> MultiCurrencyAmounts
+
+    def -: (untyped other) -> MultiCurrencyAmounts
+
+    def -@: () -> MultiCurrencyAmounts
+
+    def +@: () -> MultiCurrencyAmounts
+
+    alias merge +
+
+    alias subtract -
+
+    def amount_for: (untyped currency) -> Money
+
+    def currencies: () -> Array[Money::Currency]
+
+    def each: () { (Money) -> void } -> Array[Money]
+              | () -> Enumerator[Money]
+
+    def empty?: () -> bool
+
+    def zero?: () -> bool
+
+    def size: () -> Integer
+
+    alias length size
+
+    def to_a: () -> Array[Money]
+
+    def to_h: () -> Hash[String, untyped]
+
+    def as_json: (*untyped) -> Hash[String, String]
+
+    def to_json: (*untyped) -> String
+
+    def ==: (untyped other) -> bool
+
+    def eql?: (untyped other) -> bool
+
+    def hash: () -> Integer
+
+    def inspect: () -> String
+
+    def quote: (untyped target_currency, ?bank: untyped) -> ConversionQuote
+
+    alias quote_to quote
+
+    alias conversion_quote quote
+
+    alias exchange_quote_to quote
+
+    def convert_to: (untyped target_currency, ?bank: untyped,
+                     ?rounding_mode: Integer) -> Money
+
+    alias exchange_to convert_to
+  end
+  MultiCurrencyAmount = MultiCurrencyAmounts
+end

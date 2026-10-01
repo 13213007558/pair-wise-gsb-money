@@ -1,0 +1,51 @@
+class Money
+  class ConversionQuote
+    @source_amounts: MultiCurrencyAmounts
+    @target_currency: Money::Currency
+    @source_totals: Hash[String, Money]
+    @rates: Hash[String, BigDecimal]
+    @bank: untyped
+
+    def initialize: (MultiCurrencyAmounts source_amounts, untyped target_currency,
+                     ?bank: untyped) -> void
+
+    attr_reader source_amounts: MultiCurrencyAmounts
+
+    attr_reader target_currency: Money::Currency
+
+    attr_reader source_totals: Hash[String, Money]
+
+    attr_reader rates: Hash[String, BigDecimal]
+
+    alias exchange_rates rates
+
+    def rate_for: (untyped currency) -> BigDecimal
+
+    alias [] rate_for
+
+    def unrounded_fractional: () -> BigDecimal
+
+    def convert: (?rounding_mode: Integer) -> Money
+
+    alias to_money convert
+
+    alias call convert
+
+    alias amount convert
+
+    alias converted_amount convert
+
+    def as_json: (*untyped) -> Hash[String, untyped]
+
+    def to_json: (*untyped) -> String
+
+    def ==: (untyped other) -> bool
+
+    def eql?: (untyped other) -> bool
+
+    def hash: () -> Integer
+
+    def inspect: () -> String
+  end
+  ExchangeQuote = ConversionQuote
+end

@@ -245,6 +245,46 @@ Money.add_rate("USD", "EUR", 0.5)
 Money.from_cents(1000, "EUR") + Money.from_cents(1000, "USD") == Money.from_cents(1500, "EUR")
 ```
 
+### Multi-currency totals and quote snapshots
+
+Use `Money::MultiCurrencyAmounts` when entries in an order use different
+currencies and conversion must happen after all amounts have been netted:
+
+```ruby
+order_total = Money::MultiCurrencyAmounts.new(
+  Money.from_cents(10_000, "USD"), # income
+  Money.from_cents(-2_000, "EUR"), # refund
+  Money.from_cents(350, "JPY"),    # fee
+)
+
+# No exchange rates are queried for ordinary collection arithmetic.
+order_total += Money::MultiCurrencyAmounts.new(Money.from_cents(500, "USD"))
+order_total -= Money::MultiCurrencyAmounts.new(Money.from_cents(100, "EUR"))
+```
+
+Zero net amounts are removed and serialization is ordered by ISO currency code.
+
+```ruby
+order_total.to_json
+# => {"EUR":"-2100","JPY":"350","USD":"10500"}
+```
+
+Create an explicit `Money::ConversionQuote` at the reporting boundary. The quote
+reads every required rate at once, records the source currency totals, and then
+converts repeatedly from the frozen snapshot. Raises `Money::Bank::UnknownRate`
+if any required rate is missing; rounding happens only on the final target total.
+
+```ruby
+quote = order_total.quote("USD")
+reported_total = quote.convert
+
+# Later bank rate changes do not affect this quote.
+quote.convert == reported_total
+
+# A fresh boundary explicitly creates a fresh snapshot.
+order_total.quote("USD")
+```
+
 ### Exchange rate stores
 
 The default bank is initialized with an in-memory store for exchange rates.
