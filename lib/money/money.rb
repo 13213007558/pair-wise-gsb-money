@@ -298,6 +298,49 @@ class Money
     self.default_bank = Bank::SingleCurrency.instance
   end
 
+  # Net present value of dated cash flows at a constant annual rate.
+  #
+  # All amounts must already be in the same currency; no exchange rates are
+  # fetched. See {Money::CashFlow#npv} for discounting details and
+  # {Money::CashFlow::DayCount} for day-count conventions.
+  #
+  # @param rate [Numeric] Annual rate (0.05 means 5%).
+  # @param flows [Hash(Date => Money), Array<Array(Date, Money)>] Dated amounts.
+  # @param convention [Symbol, #call] Day-count convention (default
+  #   +:act_365_fixed+).
+  # @return [Money]
+  #
+  # @example
+  #   Money.npv(0.1, { Date.new(2024, 1, 1) => Money.new(-100, "USD"),
+  #                     Date.new(2025, 1, 1) => Money.new(110, "USD") })
+  def self.npv(rate, flows, convention = :act_365_fixed, valuation_date: nil)
+    CashFlow.npv(rate, flows, convention, valuation_date: valuation_date)
+  end
+
+  # Finds every internal rate of return of dated cash flows inside a rate
+  # range, including multiple rates and tangent (even multiplicity) roots.
+  #
+  # All amounts must already be in the same currency; no exchange rates are
+  # fetched. See {Money::CashFlow#xirr} for the returned report and search
+  # options.
+  #
+  # @param flows [Hash(Date => Money), Array<Array(Date, Money)>] Dated amounts.
+  # @param args [Object] Positional arguments forwarded to CashFlow#xirr.
+  # @param options [Hash] Keyword arguments forwarded to CashFlow.xirr.
+  # @return [Money::CashFlow::Xirr::Result]
+  #
+  # @example Cash flows with two internal rates of return (0% and 50%)
+  #   result = Money.xirr(
+  #     { Date.new(2025, 1, 1) => Money.new(-10_000, "USD"),
+  #       Date.new(2026, 1, 1) => Money.new(25_000, "USD"),
+  #       Date.new(2027, 1, 1) => Money.new(-15_000, "USD") },
+  #     -0.5...5.0
+  #   )
+  #   result.rates # => [-0.0, 0.5]
+  def self.xirr(flows, *args, **options)
+    CashFlow.xirr(flows, *args, **options)
+  end
+
   # Creates a new Money object of value given in the +unit+ of the given
   # +currency+.
   #

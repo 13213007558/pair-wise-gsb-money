@@ -1,0 +1,58 @@
+class Money
+  class CashFlow
+    class Xirr
+      DEFAULT_BUDGET: Integer
+      DEFAULT_LOW: Float
+      DEFAULT_HIGH: Float
+
+      class Root < ::Struct
+        attr_accessor rate: Float
+        attr_accessor low: Float
+        attr_accessor high: Float
+        attr_accessor residual: Money
+
+        def multiple?: () -> bool
+      end
+
+      class MultipleRoot < Root
+      end
+
+      class Unresolved < ::Struct
+        attr_accessor low: Float
+        attr_accessor high: Float
+        attr_accessor reason: Symbol
+      end
+
+      class Result < ::Struct
+        attr_accessor status: Symbol
+        attr_accessor roots: Array[Root]
+        attr_accessor multiple_roots: Array[MultipleRoot]
+        attr_accessor unresolved_intervals: Array[Unresolved]
+        attr_accessor evaluations: Integer
+        attr_accessor budget: Integer
+        attr_accessor low: Float
+        attr_accessor high: Float
+        attr_accessor currency: Money::Currency
+        attr_accessor cash_flow: CashFlow
+
+        def complete?: () -> bool
+        def all_roots: () -> Array[Root]
+        def rates: () -> Array[Float]
+      end
+
+      class BudgetExhausted < StandardError
+        attr_reader evaluations: Integer
+      end
+
+      def initialize: (CashFlow) -> void
+      def solve: (
+        Float lower,
+        Float upper,
+        exclude_upper: bool,
+        tol: Float,
+        budget: Integer,
+        residual_tol: Float?
+      ) -> Result
+    end
+  end
+end

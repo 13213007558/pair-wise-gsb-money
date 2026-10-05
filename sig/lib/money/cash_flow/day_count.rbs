@@ -1,0 +1,14 @@
+class Money
+  class CashFlow
+    module DayCount
+      CONVENTIONS: Array[Symbol]
+
+      def self.fetch: (Symbol | ^(Date, Date) -> Float) -> ^(Date, Date) -> Float
+      def self.act_act_isda: (Date, Date) -> Float
+      def self.act_365_fixed: (Date, Date) -> Float
+      def self.act_360: (Date, Date) -> Float
+      def self.thirty_360_us: (Date, Date) -> Float
+      def self.thirty_e_360: (Date, Date) -> Float
+    end
+  end
+end

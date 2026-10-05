@@ -617,6 +617,43 @@ I18n.enforce_available_locales = false
 
 Prior to v6.9.0 heuristic analysis of string input was part of this gem. Since then it was extracted in to [money-heuristics gem](https://github.com/RubyMoney/money-heuristics).
 
+## Cash flow valuation (NPV and XIRR)
+
+`Money::CashFlow` values dated cash flows. All amounts must share one currency:
+the cash flow never looks up exchange rates, so convert amounts explicitly
+beforehand (for example with `Money#exchange_to`). The day-count convention is
+chosen by the caller (`:act_365_fixed`, `:act_360`, `:act_act_isda`,
+`:thirty_360_us`, `:thirty_e_360`, or any callable taking two dates).
+
+```ruby
+flows = {
+  Date.new(2025, 1, 1) => Money.new(-10_000, "USD"),
+  Date.new(2026, 1, 1) => Money.new(25_000, "USD"),
+  Date.new(2027, 1, 1) => Money.new(-15_000, "USD")
+}
+
+Money.npv(0.05, flows)                 # net present value at 5%
+
+result = Money.xirr(flows, -0.5...5.0) # find EVERY rate in the range
+result.status                          # :ok, :no_roots, :all_zero or
+                                       # :budget_exhausted
+result.rates                           # => [0.0, 0.5]
+result.roots.each do |root|
+  root.rate                            # reported rate
+  root.low..root.high                  # isolating bracket (r > -1)
+  root.residual                        # NPV at the reported rate
+end
+result.multiple_roots                  # tangent roots (even multiplicity)
+result.unresolved_intervals            # brackets left when budget runs out
+```
+
+Unlike a calculator that iterates from one guess and converges to whichever
+root is nearby, `xirr` adaptively subdivides the range using monotonic bounds
+of NPV and its derivative. It therefore reports all sign-changing roots,
+separately reports tangent/multiple roots and root-free/all-zero inputs, and
+returns the intervals that were not yet excluded if the evaluation budget is
+exhausted.
+
 ## Upgrade Guides
 
 When upgrading between major versions, please refer to the appropriate upgrade guide:

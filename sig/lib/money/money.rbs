@@ -272,6 +272,17 @@ class Money
   # currency exchange. Useful when apps operate in a single currency at a time.
   def self.disallow_currency_conversion!: () -> untyped
 
+  # Net present value of dated cash flows at a constant annual rate.
+  def self.npv: (
+    Numeric rate,
+    untyped flows,
+    ?(Symbol | ^(Date, Date) -> Float) convention,
+    ?valuation_date: Date?
+  ) -> Money
+
+  # Finds every internal rate of return of dated cash flows in a range.
+  def self.xirr: (untyped flows, *untyped args, **untyped options) -> CashFlow::Xirr::Result
+
   # Creates a new Money object of value given in the +unit+ of the given
   # +currency+.
   #

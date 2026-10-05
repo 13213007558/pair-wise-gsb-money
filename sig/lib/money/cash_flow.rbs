@@ -1,0 +1,41 @@
+class Money
+  class CashFlow
+    class InvalidCashFlow < ArgumentError
+    end
+
+    class PreciseMoney < Money
+    end
+
+    @day_count_convention: Symbol | ^(Date, Date) -> Float
+    @currency: Money::Currency
+    @valuation_date: Date
+    @flows: Array[[Date, Money]]
+    @year_fraction: ^(Date, Date) -> Float
+
+    def self.[]: (*untyped flows) -> CashFlow
+    def self.npv: (Numeric rate, untyped flows, ?(Symbol | ^(Date, Date) -> Float) convention, ?valuation_date: Date?) -> Money
+    def self.xirr: (untyped flows, *untyped args, **untyped options) -> Xirr::Result
+
+    def initialize: (untyped flows, ?(Symbol | ^(Date, Date) -> Float) convention, ?valuation_date: Date?) -> void
+
+    attr_reader flows: Array[[Date, Money]]
+    attr_reader currency: Money::Currency
+    attr_reader day_count_convention: Symbol | ^(Date, Date) -> Float
+
+    def valuation_date: () -> Date
+    def dates: () -> Array[Date]
+    def amounts: () -> Array[Money]
+    def all_zero?: () -> bool
+    def year_fraction: (Date) -> Float
+    def npv: (Numeric) -> Money
+    def xirr: (
+      ?Range[Numeric]? range,
+      ?low: Numeric?,
+      ?high: Numeric?,
+      ?tol: Numeric,
+      ?budget: Integer,
+      ?residual_tol: Numeric?
+    ) -> Xirr::Result
+    def build_money: (Float) -> Money
+  end
+end
