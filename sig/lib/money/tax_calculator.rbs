@@ -1,0 +1,78 @@
+# frozen_string_literal: true
+
+class Money
+  class TaxCalculator
+    class CircularDependencyError < ArgumentError
+    end
+
+    class InvalidTaxError < ArgumentError
+    end
+
+    class CalculationLine
+      attr_reader name: Symbol
+      attr_reader rate: Rational
+      attr_reader base: Money
+      attr_reader base_components: Hash[Symbol, Money]
+      attr_reader amount_before_rounding: Rational
+      attr_reader amount: Money
+      attr_reader rounding_mode: Integer
+
+      def initialize: (?name: Symbol, ?rate: Rational, ?base: Money,
+                         ?base_components: Hash[Symbol, Money],
+                         ?amount_before_rounding: Rational, ?amount: Money,
+                         ?rounding_mode: Integer) -> void
+    end
+
+    class Result
+      attr_reader net: Money
+      attr_reader tax_lines: Array[CalculationLine]
+      attr_reader subtotal: Money
+      attr_reader tax: Money
+      attr_reader gross_before_cash_rounding: Money
+      attr_reader cash_rounding_adjustment: Money
+      attr_reader gross: Money
+
+      def initialize: (?net: Money, ?tax_lines: Array[CalculationLine],
+                         ?subtotal: Money, ?tax: Money,
+                         ?gross_before_cash_rounding: Money,
+                         ?cash_rounding_adjustment: Money, ?gross: Money) -> void
+    end
+
+    type rounding_mode = (
+      :up | :down | :ceiling | :floor | :half_up | :half_down | :half_even | Integer
+    )
+
+    type tax_base_dependency = (Symbol | String)
+
+    type tax_config = Hash[Symbol, untyped]
+
+    type normalized_tax = {
+      name: Symbol,
+      rate: Rational,
+      base_dependencies: Array[Symbol],
+      rounding_mode: Integer,
+    }
+
+    ROUNDING_MODES: Hash[Symbol, Integer]
+
+    attr_reader currency: Money::Currency
+    attr_reader taxes: Array[normalized_tax]
+    attr_reader rounding_mode: Integer
+    attr_reader cash_rounding_step: Integer
+    attr_reader cash_rounding_mode: Integer
+
+    def initialize: (currency: Money::Currency | String | Symbol,
+                     taxes: Array[tax_config],
+                     ?rounding_mode: rounding_mode,
+                     ?cash_rounding_step: Integer | Money | nil,
+                     ?cash_rounding_mode: rounding_mode?) -> TaxCalculator
+
+    def calculate: (Money | Integer) -> Result
+
+    def gross_from_net: (Money | Integer) -> Money
+
+    def nets_for_gross: (Money | Integer) -> Array[Result]
+
+    alias reverse nets_for_gross
+  end
+end

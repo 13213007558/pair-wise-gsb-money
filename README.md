@@ -503,6 +503,41 @@ To round to the nearest cash value in currencies without small denominations:
 Money.from_cents(11_11, "CHF").to_nearest_cash_value.format # => "CHF 11.10"
 ```
 
+## Offline Tax Calculation
+
+`Money::TaxCalculator` calculates layered taxes without exchange rates or network access. The caller supplies each tax rate, base dependencies, and rounding mode. Base dependencies may include `:net` and the rounded amount of any previously declared tax.
+
+```ruby
+calculator = Money::TaxCalculator.new(
+  currency: "USD",
+  taxes: [
+    { name: :vat, rate: BigDecimal("0.10") },
+    { name: :surtax, rate: Rational(1, 20), base_dependencies: [:vat] },
+  ],
+  cash_rounding_step: 5,
+  cash_rounding_mode: :half_up,
+)
+
+result = calculator.calculate(100) # 100 cents
+result.net                         # #<Money fractional:100 currency:USD>
+result.tax                         # #<Money fractional:11 currency:USD>
+result.gross                       # #<Money fractional:110 currency:USD>
+result.tax_lines.map do |line|
+  [line.name, line.base, line.amount_before_rounding, line.amount]
+end
+```
+
+Every result line retains its rate, total base, individual base components, pre-rounding amount as an exact `Rational` in major units, rounded amount, and rounding mode. The result also retains `gross_before_cash_rounding` and `cash_rounding_adjustment`.
+
+Reverse lookup returns **all** matching whole-minor-unit net prices rather than choosing one. The array is empty when there is no exact solution. `Float` rates are rejected; use `Integer`, `Rational`, or `BigDecimal`.
+
+```ruby
+calculator.nets_for_gross(115)
+# Four net prices can produce a cash-rounded gross of 115 cents.
+```
+
+Zero inputs and zero-rate taxes produce explicit zero amounts. Negative net prices are supported as reversals and use the same signed rounding rules. Dependency cycles, unknown dependencies, fractional minor-unit inputs, and invalid cash steps raise before or during the requested calculation.
+
 ## Ruby on Rails
 
 To integrate money in a Rails application use [money-rails](https://github.com/RubyMoney/money-rails).
