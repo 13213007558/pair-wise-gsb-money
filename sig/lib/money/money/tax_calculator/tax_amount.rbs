@@ -1,0 +1,19 @@
+class Money
+  class TaxCalculator
+    class TaxAmount
+      attr_reader name: Symbol
+      attr_reader rate: Rational
+      attr_reader base: Money
+      attr_reader unrounded_amount: Rational
+      attr_reader amount: Money
+
+      def initialize: (
+        name: Symbol,
+        rate: Rational,
+        base: Money,
+        unrounded_amount: Rational,
+        amount: Money,
+      ) -> void
+    end
+  end
+end

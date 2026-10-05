@@ -503,6 +503,38 @@ To round to the nearest cash value in currencies without small denominations:
 Money.from_cents(11_11, "CHF").to_nearest_cash_value.format # => "CHF 11.10"
 ```
 
+### Offline tax calculation
+
+`Money::TaxCalculator` performs deterministic, offline tax calculations. Every tax declares its rate, base dependencies, rounding step, and rounding mode. Rounding steps are expressed in fractional currency units; use `1` to round to the minimum monetary unit. Zero and negative `Money` amounts are supported, while tax rates must be finite and non-negative.
+
+```ruby
+calculator = Money::TaxCalculator.new(
+  [
+    { name: :excise, rate: BigDecimal("0.05"), rounding_mode: BigDecimal::ROUND_HALF_UP },
+    { name: :vat, rate: BigDecimal("0.10"), base: [:net, :excise], rounding_mode: BigDecimal::ROUND_HALF_UP }
+  ],
+  cash_rounding_step: 5,
+  cash_rounding_mode: BigDecimal::ROUND_HALF_UP,
+)
+
+result = calculator.calculate(Money.new(1000, "USD"))
+result.net         # => USD 10.00
+result.tax_total   # => USD 1.55
+result.gross       # => USD 11.55 before cash rounding
+result.cash_total  # => USD 11.55
+result.taxes.each do |tax|
+  tax.base
+  tax.unrounded_amount
+  tax.amount
+end
+```
+
+Dependency cycles and invalid rules are rejected when the calculator is constructed. Reverse lookup returns every net `Money` amount that rounds to the supplied cash total; it may return zero, one, or several results and never chooses a candidate implicitly.
+
+```ruby
+calculator.reverse(Money.new(105, "USD"))
+```
+
 ## Ruby on Rails
 
 To integrate money in a Rails application use [money-rails](https://github.com/RubyMoney/money-rails).

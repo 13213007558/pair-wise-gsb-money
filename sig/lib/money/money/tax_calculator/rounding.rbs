@@ -1,0 +1,17 @@
+class Money
+  class TaxCalculator
+    class Rounding
+      MODES: Hash[Integer, bool]
+
+      def self.round: (Rational value, Integer step, Integer mode) -> Integer
+
+      def self.validate_step: (untyped value, (Symbol | String) label) -> Integer
+
+      def self.validate_mode: (untyped value) -> Integer
+
+      def initialize: (Rational value, Integer step, Integer mode) -> void
+
+      def round: () -> Integer
+    end
+  end
+end

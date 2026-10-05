@@ -1,0 +1,11 @@
+class Money
+  class TaxCalculator
+    class RuleFactory
+      def self.build: (Array[Hash[Symbol, untyped]] taxes) -> Array[TaxRule]
+
+      def initialize: (Hash[Symbol, untyped] tax, Integer index) -> void
+
+      def rule: () -> TaxRule
+    end
+  end
+end

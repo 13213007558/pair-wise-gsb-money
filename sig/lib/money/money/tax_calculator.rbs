@@ -1,0 +1,24 @@
+class Money
+  class TaxCalculator
+    class CircularTaxDependency < ArgumentError
+    end
+
+    ROUNDING_MODES: Hash[Integer, bool]
+
+    def self.new: (
+      Array[Hash[Symbol, untyped]] taxes,
+      cash_rounding_step: Integer,
+      cash_rounding_mode: Integer,
+    ) -> TaxCalculator
+
+    def initialize: (
+      Array[Hash[Symbol, untyped]] taxes,
+      cash_rounding_step: Integer,
+      cash_rounding_mode: Integer,
+    ) -> void
+
+    def calculate: (Money net) -> Result
+
+    def reverse: (Money total) -> Array[Result]
+  end
+end

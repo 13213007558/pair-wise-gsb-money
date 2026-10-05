@@ -1,0 +1,19 @@
+class Money
+  class TaxCalculator
+    class TaxRule
+      attr_reader name: Symbol
+      attr_reader rate: Rational
+      attr_reader dependencies: Array[Symbol]
+      attr_reader rounding_step: Integer
+      attr_reader rounding_mode: Integer
+
+      def initialize: (
+        name: Symbol,
+        rate: Rational,
+        dependencies: Array[Symbol],
+        rounding_step: Integer,
+        rounding_mode: Integer,
+      ) -> void
+    end
+  end
+end

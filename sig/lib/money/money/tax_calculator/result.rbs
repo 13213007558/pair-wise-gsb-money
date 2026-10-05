@@ -1,0 +1,19 @@
+class Money
+  class TaxCalculator
+    class Result
+      attr_reader net: Money
+      attr_reader taxes: Array[TaxAmount]
+      attr_reader tax_total: Money
+      attr_reader gross: Money
+      attr_reader cash_total: Money
+
+      def initialize: (
+        net: Money,
+        taxes: Array[TaxAmount],
+        tax_total: Money,
+        gross: Money,
+        cash_total: Money,
+      ) -> void
+    end
+  end
+end

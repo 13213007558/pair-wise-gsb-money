@@ -1,0 +1,21 @@
+class Money
+  class TaxCalculator
+    class CandidateBounds
+      def self.for: (
+        Array[TaxRule] rules,
+        Array[Symbol] order,
+        Integer target,
+        Integer cash_rounding_step,
+      ) -> Array[Integer]
+
+      def initialize: (
+        Array[TaxRule] rules,
+        Array[Symbol] order,
+        Integer target,
+        Integer cash_rounding_step,
+      ) -> void
+
+      def to_a: () -> Array[Integer]
+    end
+  end
+end
