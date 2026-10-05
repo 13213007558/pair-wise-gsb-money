@@ -1,0 +1,74 @@
+class Money
+  class Allocation
+    # A serializable voucher recording how a single amount was allocated
+    # across multiple parties, together with the agreed order in which the
+    # smallest units are released back on refunds.
+    #
+    # Partial refunds are deducted from the voucher instead of re-allocating
+    # every refund amount on its own. Each refund is derived from the
+    # cumulative refunded total, so the per-party distribution for a given
+    # cumulative refund amount is always identical, no matter how many
+    # partial refunds (and in which order) were used to reach it.
+    class Voucher
+      # Raised when a refund id is presented more than once.
+      class DuplicateRefundError < StandardError
+      end
+
+      # Raised when a refund would exceed the remaining refundable amount.
+      class RefundExceedsTotalError < StandardError
+      end
+
+      # The original allocation in smallest units.
+      attr_reader splits: Array[Integer]
+
+      # The agreed order (party indexes) in which the smallest units are
+      # released back on refunds.
+      attr_reader release_order: Array[Integer]
+
+      # The cumulative refunded amount in smallest units.
+      attr_reader refunded: Integer
+
+      # @param splits [Array[Integer]] the original allocation in smallest units, one entry per party.
+      # @param release_order [Array[Integer], nil] the agreed unit release order; a permutation of the party indexes.
+      def initialize: (Array[Integer] splits, ?release_order: Array[Integer]?) -> void
+
+      # The total allocated amount in smallest units.
+      def total: () -> Integer
+
+      # The amount that can still be refunded.
+      def remaining: () -> Integer
+
+      # The refund identifiers seen so far.
+      def refund_ids: () -> Array[untyped]
+
+      # The cumulative refunded amount per party.
+      def refunded_splits: () -> Array[Integer]
+
+      # The amount still refundable per party.
+      def remaining_splits: () -> Array[Integer]
+
+      # Deducts a partial refund from the voucher and returns the amount
+      # refunded to each party by this call.
+      #
+      # @param amount [Integer] the refund amount in smallest units.
+      # @param id [untyped] a unique identifier for the refund.
+      def refund: (Integer amount, id: untyped) -> Array[Integer]
+
+      # A plain-data representation suitable for serialization.
+      def to_h: () -> Hash[Symbol, untyped]
+
+      # Rebuilds a voucher from the representation returned by #to_h.
+      def self.from_h: (Hash[untyped, untyped] hash) -> Voucher
+
+      def ==: (untyped other) -> bool
+
+      private
+
+      def cumulative_splits: (Integer cumulative) -> Array[Integer]
+
+      def release_threshold: (Integer cumulative) -> Rational
+
+      def priority_count: (Rational reciprocal) -> Integer
+    end
+  end
+end
