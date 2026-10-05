@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add `Money::AllocationVoucher` (via `Money#allocation_voucher`): a serializable voucher that records an
+  allocation and its minimal-unit release order, so partial refunds are deducted consistently regardless of
+  how they are split or ordered; repeated refund ids are not deducted twice and refunds exceeding the
+  remaining total are rejected without changing state
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`
 - Fix deprecation warning for eql?

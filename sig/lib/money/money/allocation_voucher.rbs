@@ -1,0 +1,47 @@
+class Money
+  class AllocationVoucher
+    # Raised when a refund would exceed the remaining (not yet refunded) total.
+    class RefundExceedsTotalError < StandardError
+    end
+
+    # The outcome of a single AllocationVoucher#refund call.
+    class Refund
+      attr_reader id: String
+      attr_reader current: Array[Money]
+      attr_reader cumulative: Array[Money]
+
+      def initialize: (id: String, current: Array[Money], cumulative: Array[Money], duplicate: bool) -> void
+
+      def duplicate?: () -> bool
+    end
+
+    attr_reader parts: Array[Numeric]
+    attr_reader refund_ids: Array[String]
+
+    def initialize: (Money money, (Numeric | Array[Numeric]) parts) -> void
+
+    def self.from_h: (Hash[untyped, untyped] hash) -> AllocationVoucher
+
+    def to_h: () -> Hash[String, untyped]
+
+    def total: () -> Money
+
+    def allocations: () -> Array[Money]
+
+    def refunded: () -> Array[Money]
+
+    def refunded_total: () -> Money
+
+    def outstanding: () -> Array[Money]
+
+    def outstanding_total: () -> Money
+
+    def fully_refunded?: () -> bool
+
+    def release_order: () -> Array[Integer]
+
+    def refund: (Money amount, id: untyped) -> Refund
+  end
+
+  def allocation_voucher: ((Numeric | Array[Numeric]) parts) -> AllocationVoucher
+end
