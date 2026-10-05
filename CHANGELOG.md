@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Money::Allocation.generate_with_bounds` and `Money#allocate_with_bounds` to split an amount into shares that each carry their own weight, minimum and maximum, with explicit refund handling for negative amounts
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`
 - Fix deprecation warning for eql?

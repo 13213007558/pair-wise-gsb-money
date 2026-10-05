@@ -1,5 +1,23 @@
 class Money
   class Allocation
+    # Raised when the requested amount cannot cover the combined minimums.
+    class ShortfallError < ArgumentError
+      attr_reader amount: Numeric
+      attr_reader required: Numeric
+
+      def initialize: (Numeric amount, Numeric required) -> void
+      def shortfall: () -> Numeric
+    end
+
+    # Raised when the combined maximums cannot absorb the requested amount.
+    class UndistributableError < ArgumentError
+      attr_reader amount: Numeric
+      attr_reader distributable: Numeric
+
+      def initialize: (Numeric amount, Numeric distributable) -> void
+      def undistributable: () -> Numeric
+    end
+
     # Allocates a specified amount into parts based on their proportions or distributes
     # it evenly when the number of parts is specified numerically.
     #
@@ -20,5 +38,11 @@ class Money
     # @return [Array[Numeric]] An array containing the allocated amounts.
     # @raise [ArgumentError] If parts is empty or not provided.
     def self.generate: (Numeric amount, (Numeric | Array[Numeric]) parts, ?(bool | Integer) decimal_cutoff) -> Array[Numeric]
+
+    type share = { ?weight: Numeric, ?min: Integer, ?max: Integer?, ?key: untyped }
+
+    # Allocates an amount in smallest currency units into shares that each
+    # carry their own weight, minimum and maximum.
+    def self.generate_with_bounds: (Numeric amount, Array[share] shares, ?refund: bool) -> Array[Integer]
   end
 end

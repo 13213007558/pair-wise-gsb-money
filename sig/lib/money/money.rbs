@@ -475,6 +475,15 @@ class Money
 
   alias split allocate
 
+  # Splits the amount into shares that each carry their own weight, minimum
+  # and maximum, expressed in the smallest currency unit.
+  #
+  # @example
+  #   Money.new(100, "USD").allocate_with_bounds([{ weight: 1, max: 10 }, { weight: 1 }])
+  #   #=> [Money.new(10), Money.new(90)]
+  #
+  def allocate_with_bounds: (Array[Money::Allocation::share] shares, ?refund: bool) -> Array[Money]
+
   # Round the monetary amount to smallest unit of coinage.
   #
   # @note

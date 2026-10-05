@@ -942,6 +942,41 @@ RSpec.describe Money do
     end
   end
 
+  describe "#allocate_with_bounds" do
+    it "satisfies minimums, then distributes the rest by weight up to each maximum" do
+      shares = [
+        { weight: 1, max: 10 },
+        { weight: 1, max: 40 },
+        { weight: 1 },
+      ]
+
+      moneys = Money.us_dollar(100).allocate_with_bounds(shares)
+
+      expect(moneys).to eq([Money.us_dollar(10), Money.us_dollar(40), Money.us_dollar(50)])
+      expect(moneys.sum).to eq(Money.us_dollar(100))
+    end
+
+    it "expresses results in the smallest currency unit" do
+      shares = [{ weight: 1, min: 3 }, { weight: 1 }]
+
+      expect(Money.us_dollar(5).allocate_with_bounds(shares).map(&:fractional)).to eq([4, 1])
+    end
+
+    it "rejects negative amounts unless refund mode is enabled" do
+      shares = [{ weight: 1, max: 10 }, { weight: 1 }]
+
+      expect { Money.us_dollar(-100).allocate_with_bounds(shares) }.to raise_error(ArgumentError)
+
+      moneys = Money.us_dollar(-100).allocate_with_bounds(shares, refund: true)
+      expect(moneys.map(&:fractional)).to eq([-10, -90])
+    end
+
+    it "raises when the minimums exceed the amount" do
+      expect { Money.us_dollar(10).allocate_with_bounds([{ min: 6 }, { min: 6 }]) }
+        .to raise_error(Money::Allocation::ShortfallError)
+    end
+  end
+
   describe "#split" do
     it "needs at least one party" do
       expect { Money.us_dollar(1).split(0) }.to raise_error(ArgumentError)

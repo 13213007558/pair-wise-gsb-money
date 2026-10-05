@@ -246,4 +246,131 @@ RSpec.describe Money::Allocation do
       end
     end
   end
+
+  describe ".generate_with_bounds" do
+    it "raises an error when no shares are given" do
+      expect { described_class.generate_with_bounds(100, []) }.to raise_error(ArgumentError)
+    end
+
+    it "raises an error for inconsistent limits" do
+      expect { described_class.generate_with_bounds(100, [{ min: 10, max: 5 }]) }
+        .to raise_error(ArgumentError, /max must be greater than or equal to min/)
+      expect { described_class.generate_with_bounds(100, [{ min: -1 }]) }
+        .to raise_error(ArgumentError, /min must be non-negative/)
+      expect { described_class.generate_with_bounds(100, [{ weight: -1 }]) }
+        .to raise_error(ArgumentError, /weight must be non-negative/)
+    end
+
+    it "satisfies minimums before distributing the rest by weight" do
+      shares = [{ weight: 1, min: 10 }, { weight: 1, min: 20 }]
+
+      expect(described_class.generate_with_bounds(100, shares)).to eq([45, 55])
+    end
+
+    it "caps shares and redistributes the leftover" do
+      shares = [{ weight: 1, max: 10 }, { weight: 1 }]
+
+      expect(described_class.generate_with_bounds(100, shares)).to eq([10, 90])
+    end
+
+    it "keeps redistributing when a redistribution triggers another cap" do
+      shares = [
+        { weight: 1, max: 10 },
+        { weight: 1, max: 40 },
+        { weight: 1 },
+      ]
+
+      # First pass caps the first share at 10, the redistribution then
+      # pushes the second share past its own cap of 40, and only the
+      # second redistribution can settle on the uncapped share.
+      expect(described_class.generate_with_bounds(100, shares)).to eq([10, 40, 50])
+    end
+
+    it "combines minimums and caps without losing pennies" do
+      shares = [
+        { weight: 2, min: 100, max: 500 },
+        { weight: 3, min: 50 },
+        { weight: 5, min: 200, max: 300 },
+      ]
+
+      result = described_class.generate_with_bounds(1000, shares)
+      expect(result).to eq([320, 380, 300])
+      expect(result.sum).to eq(1000)
+    end
+
+    it "accepts rational weights and compares them exactly" do
+      shares = [{ weight: Rational(1, 3) }, { weight: Rational(2, 3) }]
+
+      expect(described_class.generate_with_bounds(3, shares)).to eq([1, 2])
+      expect(described_class.generate_with_bounds(1, shares)).to eq([0, 1])
+    end
+
+    it "breaks ties by the explicit stable key, not by input order" do
+      shares = [{ weight: 1, key: :b }, { weight: 1, key: :a }]
+
+      expect(described_class.generate_with_bounds(1, shares)).to eq([0, 1])
+    end
+
+    it "defaults the tie-break key to the share's position" do
+      expect(described_class.generate_with_bounds(1, [{ weight: 1 }, { weight: 1 }])).to eq([1, 0])
+    end
+
+    it "gives nothing beyond the minimum to zero-weight shares" do
+      shares = [{ weight: 0, min: 5 }, { weight: 1 }]
+
+      expect(described_class.generate_with_bounds(15, shares)).to eq([5, 10])
+    end
+
+    it "splits evenly when every weight is zero" do
+      expect(described_class.generate_with_bounds(10, [{ weight: 0 }, { weight: 0 }])).to eq([5, 5])
+    end
+
+    it "raises a shortfall error stating the missing amount" do
+      shares = [{ min: 6 }, { min: 6 }]
+
+      expect { described_class.generate_with_bounds(10, shares) }
+        .to raise_error(Money::Allocation::ShortfallError, /shortfall of 2/)
+
+      begin
+        described_class.generate_with_bounds(10, shares)
+      rescue Money::Allocation::ShortfallError => error
+        expect(error.shortfall).to eq(2)
+        expect(error.required).to eq(12)
+      end
+    end
+
+    it "raises an undistributable error stating the balance that fits nowhere" do
+      shares = [{ max: 30 }, { max: 30 }]
+
+      expect { described_class.generate_with_bounds(100, shares) }
+        .to raise_error(Money::Allocation::UndistributableError, /40 cannot be distributed/)
+
+      begin
+        described_class.generate_with_bounds(100, shares)
+      rescue Money::Allocation::UndistributableError => error
+        expect(error.undistributable).to eq(40)
+        expect(error.distributable).to eq(60)
+      end
+    end
+
+    context "with a negative amount" do
+      it "requires the explicit refund mode" do
+        expect { described_class.generate_with_bounds(-100, [{ weight: 1 }]) }
+          .to raise_error(ArgumentError, /refund: true/)
+      end
+
+      it "refunds within the same bounds as a positive amount" do
+        shares = [{ weight: 1, max: 10 }, { weight: 1 }]
+
+        expect(described_class.generate_with_bounds(-100, shares, refund: true)).to eq([-10, -90])
+      end
+
+      it "checks feasibility against the refunded magnitude" do
+        shares = [{ min: 6 }, { min: 6 }]
+
+        expect { described_class.generate_with_bounds(-10, shares, refund: true) }
+          .to raise_error(Money::Allocation::ShortfallError, /shortfall of 2/)
+      end
+    end
+  end
 end

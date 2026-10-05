@@ -581,6 +581,36 @@ class Money
 
   alias split allocate
 
+  # Splits the amount into shares that each carry their own weight, minimum
+  # and maximum. Every share first receives its minimum, the remaining
+  # balance is distributed proportionally to the weights, and shares that
+  # reach their maximum leave the distribution while the leftover is
+  # redistributed among the rest.
+  #
+  # Amounts are expressed in the smallest currency unit and always sum to
+  # the original amount. Ties when handing out leftover pennies are broken
+  # by each share's stable +:key+. Negative amounts are refunds and require
+  # +refund: true+.
+  #
+  # @param [Array<Hash>] shares one hash per share, see
+  #   {Money::Allocation.generate_with_bounds} for the supported keys
+  # @param [Boolean] refund must be true to allocate a negative amount
+  #
+  # @return [Array<Money>]
+  #
+  # @example
+  #   Money.new(100, "USD").allocate_with_bounds([
+  #     { weight: 1, max: 10 },
+  #     { weight: 1, max: 40 },
+  #     { weight: 1 },
+  #   ])
+  #   #=> [Money.new(10), Money.new(40), Money.new(50)]
+  #
+  def allocate_with_bounds(shares, refund: false)
+    amounts = Money::Allocation.generate_with_bounds(fractional, shares, refund: refund)
+    amounts.map { |amount| dup_with(fractional: amount) }
+  end
+
   # Round the monetary amount to smallest unit of coinage.
   #
   # @note
