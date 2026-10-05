@@ -137,6 +137,190 @@ RSpec.describe Money::Allocation do
     end
   end
 
+  context "when given bounded shares" do
+    it "requires an integer amount in the smallest currency unit" do
+      shares = [{ key: "a", weight: 1 }]
+
+      expect { described_class.generate_with_bounds(BigDecimal(100), shares) }
+        .to raise_error(ArgumentError, /Integer/)
+    end
+
+    it "satisfies minimums before distributing the remainder by weight" do
+      shares = [
+        { key: "a", weight: 1, min: 10 },
+        { key: "b", weight: 1, min: 20 },
+        { key: "c", weight: 1 },
+      ]
+
+      expect(described_class.generate_with_bounds(100, shares)).to eq([34, 43, 23])
+    end
+
+    it "redistributes the surplus of capped shares among the rest" do
+      shares = [
+        { key: "a", weight: 1, max: 10 },
+        { key: "b", weight: 1 },
+        { key: "c", weight: 1 },
+      ]
+
+      expect(described_class.generate_with_bounds(90, shares)).to eq([10, 40, 40])
+    end
+
+    it "keeps redistributing when capping happens in successive rounds" do
+      shares = [
+        { key: "a", weight: 3, max: 30 },
+        { key: "b", weight: 1, max: 25 },
+        { key: "c", weight: 1 },
+      ]
+
+      # Round 1 caps "a" at 30 (quota 60), the redistribution then pushes
+      # "b" over its cap of 25 (quota 35), and only the remainder lands on "c".
+      result = described_class.generate_with_bounds(100, shares)
+
+      expect(result).to eq([30, 25, 45])
+      expect(result.sum).to eq(100)
+    end
+
+    it "counts minimums towards the caps" do
+      shares = [
+        { key: "a", weight: 1, min: 10, max: 15 },
+        { key: "b", weight: 1 },
+      ]
+
+      expect(described_class.generate_with_bounds(100, shares)).to eq([15, 85])
+    end
+
+    it "accepts Rational weights and splits them exactly" do
+      shares = [
+        { key: "a", weight: Rational(1, 2) },
+        { key: "b", weight: Rational(1, 3) },
+        { key: "c", weight: Rational(1, 6) },
+      ]
+
+      result = described_class.generate_with_bounds(100, shares)
+
+      expect(result).to eq([50, 33, 17])
+      expect(result.sum).to eq(100)
+    end
+
+    it "breaks ties by the explicit key, not by input order" do
+      shares = [
+        { key: "b", weight: 1 },
+        { key: "a", weight: 1 },
+      ]
+
+      expect(described_class.generate_with_bounds(5, shares)).to eq([2, 3])
+    end
+
+    it "gives shares with zero weight only their minimum" do
+      shares = [
+        { key: "a", weight: 0, min: 5 },
+        { key: "b", weight: 1 },
+      ]
+
+      expect(described_class.generate_with_bounds(100, shares)).to eq([5, 95])
+    end
+
+    it "handles a zero amount when all minimums are zero" do
+      shares = [
+        { key: "a", weight: 1 },
+        { key: "b", weight: 1 },
+      ]
+
+      expect(described_class.generate_with_bounds(0, shares)).to eq([0, 0])
+    end
+
+    context "with infeasible totals" do
+      it "reports the shortfall when minimums exceed the amount" do
+        shares = [
+          { key: "a", weight: 1, min: 30 },
+          { key: "b", weight: 1, min: 30 },
+        ]
+
+        expect { described_class.generate_with_bounds(50, shares) }
+          .to raise_error(ArgumentError, /shortfall of 10/)
+      end
+
+      it "reports the undistributable remainder when caps are below the amount" do
+        shares = [
+          { key: "a", weight: 1, max: 40 },
+          { key: "b", weight: 1, max: 50 },
+        ]
+
+        expect { described_class.generate_with_bounds(100, shares) }
+          .to raise_error(ArgumentError, /10 cannot be allocated/)
+      end
+
+      it "reports the undistributable remainder when no share can take more" do
+        shares = [{ key: "a", weight: 0, min: 10 }]
+
+        expect { described_class.generate_with_bounds(100, shares) }
+          .to raise_error(ArgumentError, /90 of 100 cannot be allocated/)
+      end
+    end
+
+    context "with invalid shares" do
+      it "requires at least one share" do
+        expect { described_class.generate_with_bounds(100, []) }
+          .to raise_error(ArgumentError, /at least one share/)
+      end
+
+      it "requires an explicit key on every share" do
+        expect { described_class.generate_with_bounds(100, [{ weight: 1 }]) }
+          .to raise_error(ArgumentError, /explicit :key/)
+      end
+
+      it "requires unique keys" do
+        shares = [
+          { key: "a", weight: 1 },
+          { key: "a", weight: 1 },
+        ]
+
+        expect { described_class.generate_with_bounds(100, shares) }
+          .to raise_error(ArgumentError, /unique/)
+      end
+
+      it "rejects negative weights" do
+        expect { described_class.generate_with_bounds(100, [{ key: "a", weight: -1 }]) }
+          .to raise_error(ArgumentError, /non-negative numeric :weight/)
+      end
+
+      it "rejects caps below the minimum" do
+        expect { described_class.generate_with_bounds(100, [{ key: "a", weight: 1, min: 10, max: 5 }]) }
+          .to raise_error(ArgumentError, />= :min/)
+      end
+    end
+
+    context "with a negative amount" do
+      let(:shares) do
+        [
+          { key: "a", weight: 1 },
+          { key: "b", weight: 1 },
+          { key: "c", weight: 1 },
+        ]
+      end
+
+      it "requires the explicit refund mode" do
+        expect { described_class.generate_with_bounds(-100, shares) }
+          .to raise_error(ArgumentError, /refund/)
+      end
+
+      it "refunds the mirrored allocation in refund mode" do
+        expect(described_class.generate_with_bounds(-100, shares, refund: true))
+          .to eq([-34, -33, -33])
+      end
+
+      it "applies minimums and caps to the refunded magnitudes" do
+        shares = [
+          { key: "a", weight: 1, min: 10 },
+          { key: "b", weight: 1, max: 20 },
+        ]
+
+        expect(described_class.generate_with_bounds(-100, shares, refund: true))
+          .to eq([-80, -20])
+      end
+    end
+  end
+
   context "with an allocation seen in the wild" do
     it "allocates the full amount" do
       amount = 700273

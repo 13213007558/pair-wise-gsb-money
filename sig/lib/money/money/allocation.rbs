@@ -20,5 +20,25 @@ class Money
     # @return [Array[Numeric]] An array containing the allocated amounts.
     # @raise [ArgumentError] If parts is empty or not provided.
     def self.generate: (Numeric amount, (Numeric | Array[Numeric]) parts, ?(bool | Integer) decimal_cutoff) -> Array[Numeric]
+
+    # Allocates a specified amount into shares that each carry their own weight,
+    # minimum (floor) and maximum (cap), expressed in the smallest currency unit.
+    #
+    # Minimums are satisfied first; the remaining amount is then distributed
+    # proportionally to the weights. Shares that reach their cap are removed
+    # from the distribution and the leftover is redistributed among the
+    # remaining shares, repeating until everything is allocated. Weights may be
+    # any non-negative Numeric, including Rational. Leftover pennies and exact
+    # ties are resolved by each share's explicit, unique +key+ (ascending).
+    #
+    # Negative amounts are refunds and must be opted into with +refund: true+.
+    #
+    # @param amount [Integer] The total amount in the smallest currency unit.
+    # @param shares [Array[Hash[Symbol, untyped]]] Share specifications.
+    # @param refund [bool] Whether a negative amount is an explicit refund.
+    #
+    # @return [Array[Integer]] The allocated amounts, in input order.
+    # @raise [ArgumentError] If the shares are invalid or the amount is infeasible.
+    def self.generate_with_bounds: (Integer amount, Array[Hash[Symbol, untyped]] shares, ?refund: bool) -> Array[Integer]
   end
 end

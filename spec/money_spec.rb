@@ -942,6 +942,44 @@ RSpec.describe Money do
     end
   end
 
+  describe "#allocate_with_bounds" do
+    it "allocates respecting minimums, caps and weights" do
+      moneys = Money.us_dollar(100).allocate_with_bounds([
+        { key: "a", weight: 3, max: 30 },
+        { key: "b", weight: 1, max: 25 },
+        { key: "c", weight: 1 },
+      ])
+
+      expect(moneys).to eq [Money.us_dollar(30), Money.us_dollar(25), Money.us_dollar(45)]
+    end
+
+    it "keeps currencies intact" do
+      moneys = Money.ca_dollar(5).allocate_with_bounds([{ key: "a", weight: 1 }])
+
+      expect(moneys).to eq [Money.ca_dollar(5)]
+    end
+
+    it "requires the explicit refund mode for negative amounts" do
+      shares = [{ key: "a", weight: 1 }, { key: "b", weight: 1 }]
+
+      expect { Money.us_dollar(-100).allocate_with_bounds(shares) }
+        .to raise_error(ArgumentError, /refund/)
+
+      expect(Money.us_dollar(-100).allocate_with_bounds(shares, refund: true))
+        .to eq [Money.us_dollar(-50), Money.us_dollar(-50)]
+    end
+
+    it "raises a clear error when the amount is infeasible" do
+      shares = [
+        { key: "a", weight: 1, min: 30 },
+        { key: "b", weight: 1, min: 30 },
+      ]
+
+      expect { Money.us_dollar(50).allocate_with_bounds(shares) }
+        .to raise_error(ArgumentError, /shortfall of 10/)
+    end
+  end
+
   describe "#split" do
     it "needs at least one party" do
       expect { Money.us_dollar(1).split(0) }.to raise_error(ArgumentError)

@@ -475,6 +475,21 @@ class Money
 
   alias split allocate
 
+  # Splits a given amount into shares that each carry their own weight, minimum
+  # (floor) and maximum (cap), without losing pennies. Minimums are satisfied
+  # first, the remainder is distributed proportionally to the weights, and
+  # shares that reach their cap leave the distribution while the leftover is
+  # redistributed among the remaining shares. Ties and leftover pennies are
+  # resolved by each share's explicit, unique +key+.
+  #
+  # @param [Array<Hash>] shares share specifications, see
+  #   {Money::Allocation.generate_with_bounds}
+  # @param [Boolean] refund whether a negative amount is an explicit refund
+  #
+  # @return [Array<Money>]
+  #
+  def allocate_with_bounds: (Array[Hash[Symbol, untyped]] shares, ?refund: bool) -> Array[Money]
+
   # Round the monetary amount to smallest unit of coinage.
   #
   # @note
