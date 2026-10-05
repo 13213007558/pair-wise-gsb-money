@@ -7,6 +7,7 @@ require "money/money/constructors"
 require "money/money/formatter"
 require "money/money/allocation"
 require "money/money/locale_backend"
+require "money/cash_flow"
 
 # "Money is any object or record that is generally accepted as payment for
 # goods and services and repayment of debts in a given socio-economic context
@@ -296,6 +297,27 @@ class Money
   # currency exchange. Useful when apps operate in a single currency at a time.
   def self.disallow_currency_conversion!
     self.default_bank = Bank::SingleCurrency.instance
+  end
+
+  # Finds every XIRR (internal rate of return for irregularly dated cash
+  # flows) of a dated cash-flow series inside a caller-specified rate
+  # interval.
+  #
+  # All amounts must already share a single currency; no exchange rate is
+  # fetched implicitly. The day-count basis is selected by the caller via
+  # the +day_count:+ keyword. See Money::CashFlow for details.
+  #
+  # @param [Array] cashflows entries as Money::CashFlow::Entry,
+  #   [Money, Date] pairs, or { amount:, date: } hashes
+  # @return [Money::CashFlow::Result]
+  #
+  # @example
+  #   Money.xirr([[Money.from_amount(-1000), Date.new(2024, 1, 1)],
+  #               [Money.from_amount( 1100), Date.new(2025, 1, 1)]],
+  #              day_count: :act_365, rate_range: -0.5..1.0).rates
+  #   # => [0.1] (approximately)
+  def self.xirr(cashflows, **options)
+    CashFlow.xirr(cashflows, **options)
   end
 
   # Creates a new Money object of value given in the +unit+ of the given

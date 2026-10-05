@@ -1,0 +1,81 @@
+class Money
+  # Cash-flow valuation for Money: finds every XIRR of a dated cash-flow
+  # series inside a caller-specified rate interval.
+  module CashFlow
+    # Base error for cash-flow valuation failures.
+    class Error < StandardError
+    end
+
+    # Raised when cash flows are denominated in more than one currency.
+    class CurrencyMismatch < Error
+    end
+
+    # Raised when the search interval is not contained in r > -1.
+    class InvalidRateRange < Error
+    end
+
+    # Raised when a cash-flow entry is malformed.
+    class InvalidEntry < Error
+    end
+
+    # A single dated cash flow.
+    class Entry < Struct[untyped]
+      def initialize: (Money amount, Date date) -> void
+      def amount: () -> Money
+      def date: () -> Date
+    end
+
+    # An isolated root of the NPV equation.
+    class Root < Struct[untyped]
+      def initialize: (Range[untyped] interval, Float rate, Float residual) -> void
+      def interval: () -> Range[untyped]
+      def rate: () -> Float
+      def residual: () -> Float
+      def to_h: () -> Hash[Symbol, untyped]
+    end
+
+    # The outcome of an XIRR search.
+    class Result
+      attr_reader status: Symbol
+      attr_reader roots: Array[Root]
+      attr_reader unresolved_intervals: Array[Range[untyped]]
+      attr_reader evaluations: Integer
+      attr_reader currency: Money::Currency
+
+      def initialize: (status: Symbol, roots: Array[Root], unresolved_intervals: Array[Range[untyped]], evaluations: Integer, currency: Money::Currency) -> void
+      def solved?: () -> bool
+      def no_root?: () -> bool
+      def all_zero?: () -> bool
+      def budget_exhausted?: () -> bool
+      def rates: () -> Array[Float]
+    end
+
+    # Day-count bases computing the year fraction between two Dates.
+    module DayCount
+      def self.fetch: ((Symbol | ^(Date, Date) -> Numeric) basis) -> ^(Date, Date) -> Numeric
+      def self.act_365: (Date from, Date to) -> Float
+      def self.act_360: (Date from, Date to) -> Float
+      def self.act_act: (Date from, Date to) -> Float
+      def self.thirty_360: (Date from, Date to) -> Float
+    end
+
+    DEFAULT_TOLERANCE: Float
+    DEFAULT_MAX_EVALUATIONS: Integer
+    DEFAULT_GRID_SIZE: Integer
+
+    def self.xirr: (Array[untyped] cashflows, day_count: (Symbol | ^(Date, Date) -> Numeric), rate_range: Range[untyped], ?tolerance: Float, ?max_evaluations: Integer, ?grid_size: Integer) -> Result
+    def self.normalize: (Array[untyped] cashflows) -> Array[Entry]
+    def self.single_currency!: (Array[Entry] entries) -> Money::Currency
+    def self.validate_rate_range!: (untyped rate_range) -> void
+
+    # Isolates roots by scanning a grid uniform in log(1 + rate), then
+    # refines each sign-change bracket by bisection under an evaluation
+    # budget.
+    class Solver
+      attr_reader evaluations: Integer
+
+      def initialize: (entries: Array[Entry], year_fraction: ^(Date, Date) -> Numeric, rate_range: Range[untyped], tolerance: Float, max_evaluations: Integer, grid_size: Integer) -> void
+      def solve: () -> [Array[Root], Array[Range[untyped]]]
+    end
+  end
+end

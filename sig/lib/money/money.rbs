@@ -272,6 +272,11 @@ class Money
   # currency exchange. Useful when apps operate in a single currency at a time.
   def self.disallow_currency_conversion!: () -> untyped
 
+  # Finds every XIRR (internal rate of return for irregularly dated cash
+  # flows) of a dated cash-flow series inside a caller-specified rate
+  # interval. See Money::CashFlow for details.
+  def self.xirr: (Array[untyped] cashflows, **untyped options) -> Money::CashFlow::Result
+
   # Creates a new Money object of value given in the +unit+ of the given
   # +currency+.
   #

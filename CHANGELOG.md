@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `Money.xirr` / `Money::CashFlow`: cash-flow valuation that finds **all** internal rates of return of a dated cash-flow series inside a caller-specified rate interval (within `r > -1`). The day-count basis (`:act_365`, `:act_360`, `:act_act`, `:thirty_360`, or a custom callable) is selected by the caller; amounts must already share a single currency (no exchange rate is fetched implicitly). Each root is reported with its isolating interval and NPV residual; multiple roots, no root, and all-zero cash flows are reported separately, and an exhausted evaluation budget returns the not-yet-excluded intervals
 - Fix `Money::Currency.reset!` keeping the cached key set, so a currency registered before the reset was still accepted by `Money::Currency.new` and raised `NoMethodError` instead of `UnknownCurrency`
 - Fix `Money::Bank::VariableExchange#import_rates` parsing `:json` with `JSON.load`, which instantiates any class named by a `json_class` key; it now uses `JSON.parse`
 - Fix deprecation warning for eql?

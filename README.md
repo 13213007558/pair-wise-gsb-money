@@ -213,6 +213,36 @@ Money::Currency.new("JPY").exponent  # => 0
 Money::Currency.new("MGA").exponent  # => 1
 ```
 
+### Cash-Flow Valuation (XIRR)
+
+`Money.xirr` finds **all** internal rates of return of a dated cash-flow
+series inside a caller-specified rate interval, instead of converging to
+whichever root a guess happens to land on:
+
+```ruby
+result = Money.xirr(
+  [[Money.from_amount(-1000, "USD"), Date.new(2024, 1, 1)],
+   [Money.from_amount( 2300, "USD"), Date.new(2025, 1, 1)],
+   [Money.from_amount(-1320, "USD"), Date.new(2026, 1, 1)]],
+  day_count: :thirty_360,   # caller-selected basis: :act_365, :act_360,
+                            # :act_act, :thirty_360, or a custom callable
+  rate_range: -0.5..1.0     # search interval, must lie within r > -1
+)
+result.status # => :solved
+result.rates  # => [0.1, 0.2] (approximately)
+```
+
+- Every root is reported with its isolating interval and the NPV residual
+  at the reported rate (`result.roots`).
+- Multiple roots, no root (`:no_root`), and all-zero cash flows
+  (`:all_zero`) are reported separately via `result.status`.
+- All amounts must already share a single currency; mixed currencies raise
+  `Money::CashFlow::CurrencyMismatch` and no exchange rate is ever fetched
+  implicitly.
+- The search is bounded by an evaluation budget (`max_evaluations:`); if it
+  runs out, `result.unresolved_intervals` lists the rate ranges that could
+  not be excluded.
+
 ### Currency Lookup
 
 To find a given currency by ISO 4217 numeric code (three digits) you can do
