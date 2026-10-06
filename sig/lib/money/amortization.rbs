@@ -1,0 +1,63 @@
+class Money
+  # Pure-computation amortization schedule for a fixed-rate loan. See
+  # lib/money/amortization.rb for the full documentation.
+  class Amortization
+    # A single period of an amortization schedule.
+    class Period < Struct[untyped]
+      attr_reader number: Integer
+      attr_reader interest: Money
+      attr_reader principal: Money
+      attr_reader extra_payment: Money
+      attr_reader payment: Money
+      attr_reader balance: Money
+      attr_reader interest_residue: BigDecimal
+      attr_reader status: Symbol
+    end
+
+    # The result of running an amortization schedule.
+    class Schedule
+      include Enumerable[Period]
+
+      attr_reader rows: Array[Period]
+      attr_reader status: Symbol
+
+      def initialize: (rows: Array[Period] rows, status: Symbol status, principal: Money principal, factory: ^(Integer) -> Money factory) -> void
+
+      def each: () { (Period) -> void } -> void
+
+      def term: () -> Integer
+      def paid_off?: () -> bool
+      def negative_amortization?: () -> bool
+      def total_interest: () -> Money
+      def total_principal: () -> Money
+      def total_payment: () -> Money
+      def payoff_amount: () -> Money?
+      def balanced?: () -> bool
+    end
+
+    EXTRA_PAYMENT_MODES: Array[Symbol]
+    NEGATIVE_AMORTIZATION_MODES: Array[Symbol]
+    DEFAULT_MAX_PERIODS: Integer
+
+    attr_reader principal: Money
+    attr_reader rate: BigDecimal
+    attr_reader payment: Money
+    attr_reader extra_payments: Hash[Integer, Money]
+    attr_reader extra_payment_mode: Symbol
+    attr_reader on_negative_amortization: Symbol
+    attr_reader max_periods: Integer
+    attr_reader rounding_mode: Symbol
+
+    def initialize: (principal: Money, rate: Numeric, payment: Money,
+                     ?extra_payments: Hash[Integer, Money],
+                     ?extra_payment_mode: Symbol,
+                     ?carry_remainder: bool,
+                     ?on_negative_amortization: Symbol,
+                     ?max_periods: Integer,
+                     ?rounding_mode: Symbol) -> void
+
+    def carry_remainder?: () -> bool
+
+    def schedule: () -> Schedule
+  end
+end
