@@ -1,0 +1,39 @@
+# frozen_string_literal: true
+
+class Money
+  class CashChange
+    class Result
+      attr_reader quantities: (Hash[Money, Integer] | nil)
+
+      attr_reader total_count: (Integer | nil)
+
+      def initialize: ((Hash[Money, Integer] | nil) quantities, (Integer | nil) total_count) -> void
+
+      def solution?: () -> bool
+
+      alias solvable? solution?
+    end
+
+    NO_SOLUTION: Result
+
+    class Solver
+      def initialize: (Money amount, Hash[Money, Integer] inventory, ?(Array[Money] | nil) priority) -> void
+
+      def call: () -> Result
+    end
+
+    class Validator
+      def self.validate: (
+        Money amount,
+        Hash[Money, Integer] inventory,
+        ?(Array[Money] | nil) priority
+      ) -> [Integer, Hash[Money, Integer]]
+    end
+
+    def self.generate: (Money amount, Hash[Money, Integer] inventory, ?(Array[Money] | nil) priority) -> Result
+  end
+
+  def cash_change: (Hash[Money, Integer] inventory, ?priority: Array[Money]?) -> CashChange::Result
+
+  def self.cash_change: (Money amount, Hash[Money, Integer] inventory, ?priority: Array[Money]?) -> CashChange::Result
+end
