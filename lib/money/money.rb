@@ -6,6 +6,7 @@ require "money/money/arithmetic"
 require "money/money/constructors"
 require "money/money/formatter"
 require "money/money/allocation"
+require "money/money/cash_change"
 require "money/money/locale_backend"
 
 # "Money is any object or record that is generally accepted as payment for
@@ -580,6 +581,34 @@ class Money
   end
 
   alias split allocate
+
+  # Builds the exact combination of available cash pieces that pays this
+  # amount using the minimum number of pieces.
+  #
+  # Denominations are arbitrary (a greedy choice is not assumed to be
+  # optimal) and the available inventory is never exceeded. All values are
+  # handled as exact integer subunits. The supplied stock is not modified.
+  #
+  # @param stock [Hash{Integer, Money => Integer}] available pieces per
+  #   denomination, keyed by denomination in subunits (positive Integer or a
+  #   Money in the same currency) with non-negative Integer quantities.
+  # @param tie_break [Symbol, Array, #call] selection among equally sized
+  #   solutions. Defaults to +:largest_first+ for a stable, deterministic
+  #   result. See Money::CashChange.generate for the accepted values.
+  # @param budget [Integer, nil] maximum number of search states before
+  #   raising Money::CashChange::BudgetExceeded; +nil+ disables the bound.
+  #
+  # @return [Money::CashChange::Result] +found?+ is false when the amount
+  #   cannot be composed exactly with the available stock.
+  #
+  # @raise [ArgumentError] for negative amounts, mixed currencies, illegal
+  #   denominations, or negative/non-integer quantities.
+  #
+  # @example
+  #   Money.new(6, "USD").cash_change(4 => 1, 3 => 2).counts #=> {4=>0, 3=>2}
+  def cash_change(stock, tie_break: :largest_first, budget: Money::CashChange::DEFAULT_BUDGET)
+    Money::CashChange.generate(self, stock, tie_break: tie_break, budget: budget)
+  end
 
   # Round the monetary amount to smallest unit of coinage.
   #

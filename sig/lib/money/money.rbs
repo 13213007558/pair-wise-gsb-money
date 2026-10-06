@@ -475,6 +475,18 @@ class Money
 
   alias split allocate
 
+  # Builds the minimum-piece exact combination of available cash pieces that
+  # pays this amount, or a result whose #found? is false when unreachable.
+  #
+  # @param stock [Hash{Integer, Money => Integer}] available pieces per
+  #   denomination in fractional subunits.
+  # @param tie_break [Symbol, Array, #call] tie-break between equal-size
+  #   solutions; defaults to a stable largest-denomination-first ordering.
+  # @param budget [Integer, nil] search-state bound before raising.
+  #
+  # @return [Money::CashChange::Result]
+  def cash_change: (Hash[Integer | Money, Integer] stock, ?tie_break: Money::CashChange::tie_break, ?budget: (Integer | nil)) -> Money::CashChange::Result
+
   # Round the monetary amount to smallest unit of coinage.
   #
   # @note

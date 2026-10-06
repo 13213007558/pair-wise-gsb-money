@@ -1,0 +1,25 @@
+class Money
+  module CashChange
+    DEFAULT_BUDGET: Integer
+
+    class BudgetExceeded < StandardError
+    end
+
+    class Result
+      attr_reader counts: (Hash[untyped, Integer] | nil)
+      attr_reader total_pieces: (Integer | nil)
+
+      def initialize: ((Hash[untyped, Integer] | nil) counts, (Integer | nil) total_pieces) -> void
+
+      def found?: () -> bool
+
+      alias solution? found?
+
+      NONE: Result
+    end
+
+    type tie_break = (Symbol | Array[Integer | Money] | ^(Hash[untyped, Integer], Hash[untyped, Integer]) -> bool)
+
+    def self.generate: (Money money, Hash[Integer | Money, Integer] stock, ?tie_break: tie_break, ?budget: (Integer | nil)) -> Result
+  end
+end
