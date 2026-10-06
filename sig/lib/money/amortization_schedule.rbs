@@ -1,0 +1,51 @@
+class Money
+  class AmortizationSchedule
+    class Payment
+      attr_reader period: Integer
+      attr_reader starting_balance: Money
+      attr_reader interest: Money
+      attr_reader scheduled_regular_payment: Money
+      attr_reader regular_payment: Money
+      attr_reader extra_payment: Money
+      attr_reader payment: Money
+      attr_reader principal: Money
+      attr_reader ending_balance: Money
+      attr_reader interest_remainder_before: BigDecimal
+      attr_reader interest_remainder_after: BigDecimal
+
+      def final_payment?: () -> bool
+    end
+
+    SHORTEN_TERM: Symbol
+    RECAST_PAYMENT: Symbol
+    VALID_STRATEGIES: Array[Symbol]
+
+    attr_reader principal: Money
+    attr_reader periodic_rate: BigDecimal
+    attr_reader regular_payment: Money
+    attr_reader extra_payments: Hash[Integer, Money]
+    attr_reader extra_payment_strategy: Symbol
+    attr_reader payments: Array[Payment]
+    attr_reader status: Symbol
+    attr_reader payoff_amount: Money?
+    attr_reader carry_interest_remainder: bool
+
+    def initialize: (
+      Money principal,
+      Numeric periodic_rate,
+      Money regular_payment,
+      ?Hash[Integer, Money] extra_payments,
+      ?carry_interest_remainder: bool,
+      ?extra_payment_strategy: Symbol
+    ) -> AmortizationSchedule
+
+    def paid_off?: () -> bool
+    def negative_amortization?: () -> bool
+    def ending_balance: () -> Money
+    def interest_remainder: () -> BigDecimal
+    def total_interest: () -> Money
+    def total_principal: () -> Money
+    def total_payments: () -> Money
+    def to_a: () -> Array[Payment]
+  end
+end
