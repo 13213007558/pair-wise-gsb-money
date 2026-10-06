@@ -1,0 +1,86 @@
+class Money
+  # Finds the route through a caller-supplied directed quote network that
+  # maximizes the amount actually received when converting from one currency
+  # to another, optionally transiting through intermediate currencies.
+  class RouteQuoter
+    # A single directed quote offered between two currencies.
+    class Edge
+      attr_reader from_currency: Currency
+      attr_reader to_currency: Currency
+      attr_reader rate: BigDecimal
+      attr_reader fixed_fee: Integer
+      attr_reader proportional_fee: BigDecimal
+      attr_reader min_amount: Integer
+      attr_reader expires_at: Time?
+      attr_reader subunit_to_unit: Integer
+      attr_reader rounding_mode: Integer
+      attr_reader position: Integer?
+
+      def initialize: (from_currency: Currency | String | Symbol, to_currency: Currency | String | Symbol, rate: Numeric | String, ?fixed_fee: Integer, ?proportional_fee: Numeric | String, ?min_amount: Integer, ?expires_at: Time?, ?subunit_to_unit: Integer?, ?rounding_mode: Integer, ?position: Integer?) -> void
+
+      def expired?: (Time at) -> bool
+
+      def fractional_per_subunit: () -> Integer
+    end
+
+    # A directed quote network. Edges are kept in the order they are added.
+    class Network
+      include Enumerable[Edge]
+
+      def initialize: () -> void
+
+      def add_edge: (from_currency: Currency | String | Symbol, to_currency: Currency | String | Symbol, **untyped options) -> Edge
+
+      def each: () { (Edge) -> void } -> void
+                | () -> Enumerator[Edge, void]
+
+      def edges_from: (Currency | String | Symbol currency) -> Array[Edge]
+    end
+
+    # One settled hop of a quoted route.
+    class Leg
+      attr_reader edge: Edge
+      attr_reader amount_in: Money
+      attr_reader fixed_fee: Money
+      attr_reader proportional_fee: Money
+      attr_reader net: Money
+      attr_reader amount_out: Money
+
+      def initialize: (edge: Edge, amount_in: Money, fixed_fee: Money, proportional_fee: Money, net: Money, amount_out: Money) -> void
+
+      def from_currency: () -> Currency
+
+      def to_currency: () -> Currency
+    end
+
+    # The result of quoting a route.
+    class Quote
+      attr_reader amount: Money
+      attr_reader to_currency: Currency
+      attr_reader legs: Array[Leg]?
+      attr_reader reason: Symbol?
+
+      def self.infeasible: (amount: Money, to_currency: Currency | String | Symbol, reason: Symbol) -> Quote
+
+      def initialize: (amount: Money, to_currency: Currency | String | Symbol, legs: Array[Leg]?, ?reason: Symbol?) -> void
+
+      def feasible?: () -> bool
+
+      def hops: () -> Integer
+
+      def received: () -> Money?
+    end
+
+    def initialize: (Network network) -> void
+
+    def quote: (from: Currency | String | Symbol, to: Currency | String | Symbol, amount: Money, ?max_hops: Integer, ?at: Time) -> Quote
+
+    def quote_leg: (Edge edge, Money amount) -> Leg?
+
+    private
+
+    def collect_routes: (Currency from_currency, Currency to_currency, Money amount, Integer max_hops, Time at, Array[Currency] visited, Array[Leg] legs, Array[Array[Leg]] routes) -> void
+
+    def route_key: (Array[Leg] legs) -> [Integer, Integer, Array[Integer?]]
+  end
+end

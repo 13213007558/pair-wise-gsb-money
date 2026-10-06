@@ -245,6 +245,35 @@ Money.add_rate("USD", "EUR", 0.5)
 Money.from_cents(1000, "EUR") + Money.from_cents(1000, "USD") == Money.from_cents(1500, "EUR")
 ```
 
+### Routing quotes
+
+When a direct conversion is not the best deal, `Money::RouteQuoter` finds the
+route through a caller-supplied directed quote network that maximizes the
+amount actually received, within a given number of hops. Each edge quotes a
+rate together with a fixed fee, a proportional fee and a minimum tradeable
+amount, and every leg is settled (fees deducted, result rounded to the edge's
+subunit) before the next one is quoted. Expired edges and edges below their
+trade threshold are skipped, routes never revisit a currency, and ties are
+broken by fewer hops and then by the order edges were added. The quoter never
+touches `Money.default_bank`.
+
+```ruby
+network = Money::RouteQuoter::Network.new
+network.add_edge(from_currency: "USD", to_currency: "EUR", rate: 0.9)
+network.add_edge(from_currency: "USD", to_currency: "GBP", rate: 0.8, fixed_fee: 5_00)
+network.add_edge(from_currency: "GBP", to_currency: "EUR", rate: 1.18, fixed_fee: 3_00)
+
+quote = Money::RouteQuoter.new(network).quote(
+  from: "USD",
+  to: "EUR",
+  amount: Money.new(100_00, "USD"),
+  max_hops: 2,
+)
+quote.feasible? # => true
+quote.received  # => #<Money fractional:9000 currency:EUR>
+quote.legs      # => per-leg incoming amounts, fees and rounded credits
+```
+
 ### Exchange rate stores
 
 The default bank is initialized with an in-memory store for exchange rates.
