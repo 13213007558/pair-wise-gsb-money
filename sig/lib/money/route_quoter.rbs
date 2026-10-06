@@ -1,0 +1,97 @@
+class Money
+  class RouteQuoter
+    type currencyish = String | Symbol | Money::Currency
+    type numeric_value = Numeric | String
+    type fee_amount = Integer | Money
+    type rounding_mode = Integer
+
+    class Edge
+      FROM_KEYS: Array[Symbol]
+      TO_KEYS: Array[Symbol]
+      RATE_KEYS: Array[Symbol]
+      FIXED_FEE_KEYS: Array[Symbol]
+      PROPORTIONAL_FEE_KEYS: Array[Symbol]
+      MINIMUM_KEYS: Array[Symbol]
+      EXPIRES_KEYS: Array[Symbol]
+
+      attr_reader from_currency: Money::Currency
+      attr_reader to_currency: Money::Currency
+      attr_reader rate: BigDecimal
+      attr_reader fixed_fee: Money
+      attr_reader proportional_fee: BigDecimal
+      attr_reader minimum_amount: Money
+      attr_reader expires_at: Time?
+      attr_reader ordinal: Integer?
+
+      def self.wrap: (untyped edge, Integer ordinal) -> Edge
+      def self.fetch_value: (untyped edge, Array[Symbol] keys, ?untyped default) -> untyped
+
+      def initialize: (
+        from_currency: currencyish,
+        to_currency: currencyish,
+        rate: numeric_value,
+        ?fixed_fee: fee_amount,
+        ?proportional_fee: numeric_value,
+        ?minimum_amount: fee_amount,
+        ?expires_at: Time?,
+        ?ordinal: Integer?
+      ) -> void
+
+      def with_ordinal: (Integer new_ordinal) -> Edge
+      def available?: (?Time? now) -> bool
+      def quote: (Money amount, ?now: Time?, ?rounding_mode: rounding_mode) -> Step?
+    end
+
+    class Step
+      attr_accessor edge: Edge
+      attr_accessor input_amount: Money
+      attr_accessor fixed_fee: Money
+      attr_accessor proportional_fee: Money
+      attr_accessor total_fee: Money
+      attr_accessor net_input_amount: Money
+      attr_accessor raw_received_fractional: BigDecimal
+      attr_accessor received_amount: Money
+    end
+
+    class Route
+      attr_accessor steps: Array[Step]
+      attr_accessor source_amount: Money
+
+      def received_amount: () -> Money
+      def edges: () -> Array[Edge]
+      def currencies: () -> Array[Money::Currency]
+      def hops: () -> Integer
+      def ordinal_path: () -> Array[Integer?]
+    end
+
+    class Result
+      attr_accessor route: Route?
+
+      def found?: () -> bool
+      alias success? found?
+      alias successful? found?
+      def received_amount: () -> Money?
+      def status: () -> Symbol
+      def message: () -> String
+    end
+
+    def self.quote: (
+      Money amount,
+      currencyish to_currency,
+      Array[untyped] network,
+      max_hops: Integer,
+      ?now: Time,
+      ?rounding_mode: rounding_mode
+    ) -> Result
+
+    def initialize: (Array[untyped] network) -> void
+
+    def quote: (
+      Money amount,
+      currencyish to_currency,
+      max_hops: Integer,
+      ?now: Time,
+      ?rounding_mode: rounding_mode
+    ) -> Result
+  end
+end
